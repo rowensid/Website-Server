@@ -41,8 +41,8 @@ export async function GET() {
 
     console.log(`API: Found ${users.length} users`)
 
-    // Calculate total spent for each user
-    const usersWithSpent = await Promise.all(
+    // Calculate total spent and active services for each user
+    const usersWithStats = await Promise.all(
       users.map(async (user) => {
         const totalSpent = await db.order.aggregate({
           where: {
@@ -51,6 +51,13 @@ export async function GET() {
           },
           _sum: {
             amount: true
+          }
+        })
+
+        const activeServices = await db.service.count({
+          where: {
+            userId: user.id,
+            status: 'ACTIVE'
           }
         })
 
@@ -64,6 +71,7 @@ export async function GET() {
           createdAt: user.createdAt,
           avatar: user.avatar,
           services: user._count.services,
+          activeServices: activeServices,
           totalSpent: totalSpent._sum.amount || 0
         }
       })
@@ -71,7 +79,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      users: usersWithSpent
+      users: usersWithStats
     })
   } catch (error) {
     console.error('API: Error fetching users:', error)

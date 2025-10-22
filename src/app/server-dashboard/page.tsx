@@ -38,7 +38,8 @@ import {
   Database,
   Globe,
   Cpu,
-  HardDrive
+  HardDrive,
+  X
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -48,6 +49,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserDetailModal } from "@/components/user-detail-modal"
+import { DeleteUserModal } from "@/components/delete-user-modal"
+import { SynchronizedServers } from "@/components/synchronized-servers"
 
 interface Service {
   id: string
@@ -119,6 +123,9 @@ export default function ManagementServer() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [userDetailModalOpen, setUserDetailModalOpen] = useState(false)
+  const [deleteUserModalOpen, setDeleteUserModalOpen] = useState(false)
 
   useEffect(() => {
     fetchUserData()
@@ -234,6 +241,21 @@ export default function ManagementServer() {
     } catch (error) {
       console.error('Failed to perform user action:', error)
     }
+  }
+
+  const handleViewUserDetail = (user: User) => {
+    setSelectedUser(user)
+    setUserDetailModalOpen(true)
+  }
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user)
+    setUserDetailModalOpen(true)
+  }
+
+  const handleDeleteUser = (user: User) => {
+    setSelectedUser(user)
+    setDeleteUserModalOpen(true)
   }
 
   const getStatusColor = (status: string) => {
@@ -353,6 +375,14 @@ export default function ManagementServer() {
               </Link>
               
               <Link 
+                href="/pterodactyl"
+                className="flex items-center gap-2 px-3 py-2 bg-purple-600/20 border border-purple-600/50 rounded-lg hover:bg-purple-600/30 hover:border-purple-500 transition-all duration-200 text-purple-400 hover:text-purple-300"
+              >
+                <Server className="h-4 w-4" />
+                <span className="font-medium text-sm">Pterodactyl</span>
+              </Link>
+              
+              <Link 
                 href="/owner-panel"
                 className="flex items-center gap-2 px-3 py-2 bg-violet-600/20 border border-violet-600/50 rounded-lg hover:bg-violet-600/30 hover:border-violet-500 transition-all duration-200 text-violet-400 hover:text-violet-300"
               >
@@ -391,6 +421,11 @@ export default function ManagementServer() {
                   <DropdownMenuItem asChild>
                     <a href="/owner-panel" className="cursor-pointer text-gray-300 hover:text-white">
                       Owner Panel
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a href="/pterodactyl" className="cursor-pointer text-gray-300 hover:text-white">
+                      Pterodactyl Panel
                     </a>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -480,7 +515,7 @@ export default function ManagementServer() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full bg-gray-900 border-gray-700">
+          <TabsList className="grid grid-cols-5 w-full bg-gray-900 border-gray-700">
             <TabsTrigger value="overview" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white">
               <Activity className="w-4 h-4 mr-2" />
               Overview
@@ -488,6 +523,10 @@ export default function ManagementServer() {
             <TabsTrigger value="servers" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white">
               <Server className="w-4 h-4 mr-2" />
               Manage Server
+            </TabsTrigger>
+            <TabsTrigger value="pterodactyl" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white">
+              <Database className="w-4 h-4 mr-2" />
+              Pterodactyl
             </TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white">
               <Users className="w-4 h-4 mr-2" />
@@ -702,6 +741,14 @@ export default function ManagementServer() {
             </Card>
           </TabsContent>
 
+          {/* Pterodactyl Tab */}
+          <TabsContent value="pterodactyl" className="space-y-6">
+            <SynchronizedServers 
+              panelUrl="https://panel.androwproject.cloud"
+              apiKey="ptla_UrCtJ7YFHtcuLkm6RSXTyYRFfjRwCdoCtoU4bFimzDL"
+            />
+          </TabsContent>
+
           {/* Manage Users Tab */}
           <TabsContent value="users" className="space-y-6">
             <Card className="bg-gray-900 border-gray-800">
@@ -769,11 +816,11 @@ export default function ManagementServer() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent className="bg-gray-900 border-gray-700">
-                                <DropdownMenuItem className="text-gray-300 hover:text-white">
+                                <DropdownMenuItem onClick={() => handleViewUserDetail(user)} className="text-gray-300 hover:text-white">
                                   <Eye className="h-4 w-4 mr-2" />
                                   Lihat Detail
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-gray-300 hover:text-white">
+                                <DropdownMenuItem onClick={() => handleEditUser(user)} className="text-gray-300 hover:text-white">
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit User
                                 </DropdownMenuItem>
@@ -789,7 +836,7 @@ export default function ManagementServer() {
                                     Aktifkan
                                   </DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem className="text-red-400 hover:text-red-300">
+                                <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-red-400 hover:text-red-300">
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Hapus User
                                 </DropdownMenuItem>
@@ -929,6 +976,28 @@ export default function ManagementServer() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* User Detail Modal */}
+        <UserDetailModal
+          open={userDetailModalOpen}
+          onOpenChange={setUserDetailModalOpen}
+          user={selectedUser}
+          onUpdate={() => {
+            fetchUsers()
+            fetchStats()
+          }}
+        />
+
+        {/* Delete User Modal */}
+        <DeleteUserModal
+          open={deleteUserModalOpen}
+          onOpenChange={setDeleteUserModalOpen}
+          user={selectedUser}
+          onUpdate={() => {
+            fetchUsers()
+            fetchStats()
+          }}
+        />
       </main>
     </div>
   )

@@ -39,6 +39,18 @@ export async function POST(
       case 'demote':
         updateData.role = 'USER'
         break
+      case 'delete':
+        // Delete user and all related data
+        await db.user.delete({
+          where: { id: userId }
+        })
+        
+        console.log(`API: User ${userId} deleted`)
+        return NextResponse.json({
+          success: true,
+          action: 'delete',
+          message: 'User deleted successfully'
+        })
       default:
         return NextResponse.json(
           { error: 'Invalid action' },

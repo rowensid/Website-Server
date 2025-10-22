@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Monitor, Server, Code, Gamepad2, Users, Zap, Shield, Globe, ChevronRight, Menu, X, TrendingUp, Activity, Clock, Star } from 'lucide-react'
 import Link from 'next/link'
 import Logo from '@/components/logo'
+import { ActiveServers } from '@/components/active-servers'
 
 interface StatsData {
   totalUsers: number
@@ -323,6 +324,24 @@ export default function Home() {
               </Card>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Active Servers Section */}
+      <section className="py-20 px-4 bg-gradient-to-b from-gray-900/50 to-black">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-green-500 to-blue-600 bg-clip-text text-transparent">
+                Server Aktif Real-Time
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Pantau status server game kami secara real-time
+            </p>
+          </div>
+          
+          <ActiveServers />
         </div>
       </section>
 
