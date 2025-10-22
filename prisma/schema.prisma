@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  password      String
+  role          Role     @default(USER)
+  isActive      Boolean  @default(true)
+  avatar        String?  // Add avatar field
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  services      Service[]
+  orders        Order[]
+  sessions      Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id          String      @id @default(cuid())
+  name        String
+  type        ServiceType
+  status      ServiceStatus @default(PENDING)
+  price       Float
+  config      Json?       // Store server configuration
+  ip          String?     // Server IP address
+  port        Int?        // Server port
+  description String?     // Service description
+  userId      String
+  expiresAt   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  userId        String
+  serviceId     String?
+  amount        Float
+  status        OrderStatus @default(PENDING)
+  paymentMethod String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service       Service?    @relation(fields: [serviceId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ServiceType {
+  GAME_HOSTING
+  RDP
+  FIVEM_DEVELOPMENT
+  ROBLOX_DEVELOPMENT
+}
+
+enum ServiceStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
