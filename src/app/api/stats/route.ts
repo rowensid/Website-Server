@@ -17,6 +17,17 @@ export async function GET() {
       }
     })
 
+    // Get total active Pterodactyl servers
+    const totalPteroServers = await db.pterodactylServer.count({
+      where: {
+        status: 'running',
+        suspended: false
+      }
+    })
+
+    // Combine services and Pterodactyl servers for total active services
+    const combinedServices = totalServices + totalPteroServers
+
     // Get total completed orders
     const totalOrders = await db.order.count({
       where: {
@@ -56,6 +67,17 @@ export async function GET() {
       }
     })
 
+    const recentPteroServers = await db.pterodactylServer.count({
+      where: {
+        createdAt: {
+          gte: sevenDaysAgo
+        },
+        status: 'running'
+      }
+    })
+
+    const combinedRecentServices = recentServices + recentPteroServers
+
     // Get service distribution by type
     const servicesByType = await db.service.groupBy({
       by: ['type'],
@@ -69,14 +91,19 @@ export async function GET() {
 
     return NextResponse.json({
       totalUsers,
-      totalServices,
+      totalServices: combinedServices,
       totalOrders,
       totalRevenue: revenueResult._sum.amount || 0,
       recentUsers,
-      recentServices,
+      recentServices: combinedRecentServices,
       servicesByType,
       uptime: '99.9%',
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      // Additional breakdown
+      serviceBreakdown: {
+        localServices: totalServices,
+        pterodactylServers: totalPteroServers
+      }
     })
 
   } catch (error) {

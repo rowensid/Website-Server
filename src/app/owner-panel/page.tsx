@@ -297,7 +297,7 @@ export default function OwnerPanel() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => window.location.href = '/server-dashboard'}
+                onClick={() => window.location.href = '/manage-server'}
                 className="text-gray-300 border-gray-600 hover:bg-emerald-600/20 hover:border-emerald-500 hover:text-emerald-400 transition-all duration-200"
               >
                 <Server className="h-4 w-4 mr-2" />

@@ -98,6 +98,17 @@ model PterodactylServer {
   user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
+model ApiConfiguration {
+  id          String   @id @default(cuid())
+  name        String   @unique // Configuration name (e.g., "pterodactyl")
+  apiUrl      String   // API base URL
+  apiKey      String   // API key (encrypted in real app)
+  isActive    Boolean  @default(true)
+  description String?  // Optional description
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 enum Role {
   USER
   ADMIN

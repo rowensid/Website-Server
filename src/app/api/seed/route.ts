@@ -130,7 +130,7 @@ export async function POST() {
           email: 'admin@example.com',
           password: 'admin123',
           role: 'ADMIN',
-          access: ['owner-panel', 'server-dashboard', 'member-dashboard']
+          access: ['owner-panel', 'manage-server', 'member-dashboard']
         },
         {
           email: 'user@example.com', 
@@ -142,7 +142,7 @@ export async function POST() {
           email: 'rowensid2802@gmail.com',
           password: 'Aberzz2802',
           role: 'ADMIN',
-          access: ['owner-panel', 'server-dashboard', 'member-dashboard']
+          access: ['owner-panel', 'manage-server', 'member-dashboard']
         }
       ],
       stats: {
