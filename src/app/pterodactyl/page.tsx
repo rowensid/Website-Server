@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import { PterodactylDashboard } from '@/components/pterodactyl-dashboard';
 import { SynchronizedServers } from '@/components/synchronized-servers';
+import { CloudflareBypassConfig } from '@/components/cloudflare-bypass-config';
+import { CloudflareTroubleshoot } from '@/components/cloudflare-troubleshoot';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Server, Link, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Server, Link, Info, Shield, Settings, AlertTriangle } from 'lucide-react';
 
 interface PterodactylConfig {
   panelUrl: string;
@@ -18,6 +21,8 @@ export default function PterodactylPage() {
     apiKey: 'ptla_oaieo4yp4BQP3VXosTCjRkE8QaX1zGvLevxca1ncDx5'
   });
   const [isConnected, setIsConnected] = useState(false);
+  const [showBypassConfig, setShowBypassConfig] = useState(false);
+  const [showTroubleshoot, setShowTroubleshoot] = useState(false);
 
   const handleConfigChange = (newConfig: PterodactylConfig) => {
     setConfig(newConfig);
@@ -40,6 +45,25 @@ export default function PterodactylPage() {
           <Server className="h-4 w-4" />
           Server Management
         </Badge>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          variant={showBypassConfig ? "default" : "outline"}
+          onClick={() => setShowBypassConfig(!showBypassConfig)}
+          className="flex items-center gap-2"
+        >
+          <Shield className="h-4 w-4" />
+          {showBypassConfig ? 'Hide Bypass Config' : 'Cloudflare Bypass'}
+        </Button>
+        <Button
+          variant={showTroubleshoot ? "destructive" : "outline"}
+          onClick={() => setShowTroubleshoot(!showTroubleshoot)}
+          className="flex items-center gap-2"
+        >
+          <AlertTriangle className="h-4 w-4" />
+          {showTroubleshoot ? 'Hide Troubleshoot' : 'Troubleshoot'}
+        </Button>
       </div>
 
       {/* Information Card */}
@@ -131,6 +155,16 @@ export default function PterodactylPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Cloudflare Bypass Configuration */}
+      {showBypassConfig && (
+        <CloudflareBypassConfig />
+      )}
+
+      {/* Troubleshooting Guide */}
+      {showTroubleshoot && (
+        <CloudflareTroubleshoot />
+      )}
 
       {/* Pterodactyl Dashboard */}
       <PterodactylDashboard

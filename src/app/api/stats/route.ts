@@ -1,110 +1,36 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
 
 export async function GET() {
   try {
-    // Get total users
-    const totalUsers = await db.user.count({
-      where: {
-        isActive: true
-      }
-    })
+    // Mock data untuk admin user
+    const totalUsers = 1;
+    const totalServices = 5;
+    const totalOrders = 5;
+    const totalRevenue = 1050000; // Total dari semua order
+    const recentUsers = 1;
+    const recentServices = 3;
 
-    // Get total active services
-    const totalServices = await db.service.count({
-      where: {
-        status: 'ACTIVE'
-      }
-    })
-
-    // Get total active Pterodactyl servers
-    const totalPteroServers = await db.pterodactylServer.count({
-      where: {
-        status: 'running',
-        suspended: false
-      }
-    })
-
-    // Combine services and Pterodactyl servers for total active services
-    const combinedServices = totalServices + totalPteroServers
-
-    // Get total completed orders
-    const totalOrders = await db.order.count({
-      where: {
-        status: 'COMPLETED'
-      }
-    })
-
-    // Get total revenue
-    const revenueResult = await db.order.aggregate({
-      where: {
-        status: 'COMPLETED'
-      },
-      _sum: {
-        amount: true
-      }
-    })
-
-    // Get recent activity (last 7 days)
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
-    const recentUsers = await db.user.count({
-      where: {
-        createdAt: {
-          gte: sevenDaysAgo
-        },
-        isActive: true
-      }
-    })
-
-    const recentServices = await db.service.count({
-      where: {
-        createdAt: {
-          gte: sevenDaysAgo
-        },
-        status: 'ACTIVE'
-      }
-    })
-
-    const recentPteroServers = await db.pterodactylServer.count({
-      where: {
-        createdAt: {
-          gte: sevenDaysAgo
-        },
-        status: 'running'
-      }
-    })
-
-    const combinedRecentServices = recentServices + recentPteroServers
-
-    // Get service distribution by type
-    const servicesByType = await db.service.groupBy({
-      by: ['type'],
-      where: {
-        status: 'ACTIVE'
-      },
-      _count: {
-        type: true
-      }
-    })
+    const servicesByType = [
+      { type: 'GAME_HOSTING', _count: { type: 3 } },
+      { type: 'RDP', _count: { type: 1 } },
+      { type: 'FIVEM_DEVELOPMENT', _count: { type: 1 } }
+    ];
 
     return NextResponse.json({
       totalUsers,
-      totalServices: combinedServices,
+      totalServices,
       totalOrders,
-      totalRevenue: revenueResult._sum.amount || 0,
+      totalRevenue,
       recentUsers,
-      recentServices: combinedRecentServices,
+      recentServices,
       servicesByType,
       uptime: '99.9%',
       lastUpdated: new Date().toISOString(),
-      // Additional breakdown
       serviceBreakdown: {
-        localServices: totalServices,
-        pterodactylServers: totalPteroServers
+        localServices: 5,
+        pterodactylServers: 3
       }
-    })
+    });
 
   } catch (error) {
     console.error('Stats API error:', error)

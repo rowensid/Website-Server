@@ -1,23 +1,33 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const body = await request.json()
+    const { apiUrl, apiKey } = body
+
+    if (!apiUrl || !apiKey) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'API URL and API key are required' 
+      }, { status: 400 })
+    }
+
     // Update or create Pterodactyl configuration
     const config = await db.apiConfiguration.upsert({
       where: { name: 'pterodactyl' },
       update: {
-        apiUrl: 'https://panel.androwproject.cloud',
-        apiKey: 'ptla_oaieo4yp4BQP3VXosTCjRkE8QaX1zGvLevxca1ncDx5',
+        apiUrl: apiUrl,
+        apiKey: apiKey,
         isActive: true,
-        description: 'Pterodactyl Panel API Configuration - AndrowProject Cloud'
+        description: 'Pterodactyl Panel API Configuration'
       },
       create: {
         name: 'pterodactyl',
-        apiUrl: 'https://panel.androwproject.cloud',
-        apiKey: 'ptla_oaieo4yp4BQP3VXosTCjRkE8QaX1zGvLevxca1ncDx5',
+        apiUrl: apiUrl,
+        apiKey: apiKey,
         isActive: true,
-        description: 'Pterodactyl Panel API Configuration - AndrowProject Cloud'
+        description: 'Pterodactyl Panel API Configuration'
       }
     })
 

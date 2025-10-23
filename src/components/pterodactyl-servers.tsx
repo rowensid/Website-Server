@@ -51,7 +51,23 @@ interface PterodactylServer {
     environment: Record<string, string>;
   };
   status: string;
+  current_state?: string;
+  resources?: {
+    cpu_absolute: number;
+    memory_bytes: number;
+    disk_bytes: number;
+    network_rx_bytes: number;
+    network_tx_bytes: number;
+  };
   suspended: boolean;
+  isRealData?: boolean;
+  primaryAllocation?: {
+    attributes: {
+      ip: string;
+      port: number;
+      is_default: boolean;
+    };
+  };
 }
 
 interface ServerStats {
@@ -96,7 +112,13 @@ export function PterodactylServers({ config, isConnected }: PterodactylServersPr
       
       if (response.ok) {
         const data = await response.json();
-        setServers(data.servers || []);
+        const servers = data.servers || [];
+        setServers(servers);
+        
+        // Check real-time status for each server
+        servers.forEach(server => {
+          setTimeout(() => fetchServerStats(server), 1000); // Delay to avoid overwhelming
+        });
       } else {
         throw new Error('Failed to fetch servers');
       }
@@ -111,50 +133,36 @@ export function PterodactylServers({ config, isConnected }: PterodactylServersPr
     }
   };
 
-  const fetchServerStats = async (serverId: string) => {
+  const fetchServerStats = async (server: PterodactylServer) => {
     if (!isConnected || !config) return;
 
     try {
-      const response = await fetch(`/api/pterodactyl/server-resources`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          panelUrl: config.panelUrl,
-          apiKey: config.apiKey,
-          serverIdentifier: serverId
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
+      // Use port checking for real-time status
+      if (server.primaryAllocation) {
+        const ip = server.primaryAllocation.attributes.ip;
+        const port = server.primaryAllocation.attributes.port;
         
-        // Transform the data to match expected format
-        const transformedStats = {
-          state: data.status || 'offline',
-          memory: {
-            current: data.resources?.memory_bytes || 0,
-            limit: 0 // Will use server limits
+        const response = await fetch('/api/pterodactyl/realtime-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          cpu: {
-            current: data.resources?.cpu_absolute || 0,
-            cores: []
-          },
-          disk: {
-            current: data.resources?.disk_bytes || 0,
-            limit: 0
-          },
-          network: {
-            rx_bytes: data.resources?.network_rx_bytes || 0,
-            tx_bytes: data.resources?.network_tx_bytes || 0
-          }
-        };
+          body: JSON.stringify({
+            serverIp: ip,
+            serverPort: port
+          })
+        });
         
-        setServerStats(prev => ({
-          ...prev,
-          [serverId]: transformedStats
-        }));
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Update server status in real-time
+          setServers(prev => prev.map(s => 
+            s.identifier === server.identifier 
+              ? { ...s, status: data.status, isRealData: data.isRealData }
+              : s
+          ));
+        }
       }
     } catch (error) {
       console.error('Failed to fetch server stats:', error);
@@ -172,7 +180,7 @@ export function PterodactylServers({ config, isConnected }: PterodactylServersPr
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ signal }),
+          body: JSON.stringify({ signal: action }),
         }
       );
 
@@ -181,8 +189,8 @@ export function PterodactylServers({ config, isConnected }: PterodactylServersPr
           title: "Success",
           description: `Server ${action} action completed successfully`,
         });
-        // Refresh stats after a delay
-        setTimeout(() => fetchServerStats(serverId), 2000);
+        // Refresh servers after a delay to get updated status
+        setTimeout(() => fetchServers(), 2000);
       } else {
         throw new Error('Failed to perform power action');
       }
@@ -205,7 +213,7 @@ export function PterodactylServers({ config, isConnected }: PterodactylServersPr
     // Auto-refresh server stats every 10 seconds
     const interval = setInterval(() => {
       servers.forEach(server => {
-        fetchServerStats(server.identifier);
+        fetchServerStats(server);
       });
     }, 10000);
 
@@ -213,8 +221,8 @@ export function PterodactylServers({ config, isConnected }: PterodactylServersPr
   }, [servers, isConnected, config]);
 
   const getStatusBadge = (server: PterodactylServer) => {
-    const stats = serverStats[server.identifier];
-    const status = stats?.state || server.status || 'offline';
+    // Use the real-time status from the API response first
+    const status = server.status || 'offline';
     
     const variants = {
       live: 'default',
@@ -323,6 +331,11 @@ export function PterodactylServers({ config, isConnected }: PterodactylServersPr
                           {server.suspended && (
                             <Badge variant="destructive">Suspended</Badge>
                           )}
+                          {server.isRealData && (
+                            <Badge variant="outline" className="text-xs">
+                              Live
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -342,7 +355,18 @@ export function PterodactylServers({ config, isConnected }: PterodactylServersPr
                         </div>
                       </TableCell>
                       <TableCell>
-                        {stats ? (
+                        {server.resources ? (
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center gap-1">
+                              <MemoryStick className="h-3 w-3" />
+                              {Math.round((server.resources.memory_bytes / (server.limits.memory * 1024 * 1024)) * 100)}%
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Cpu className="h-3 w-3" />
+                              {Math.round(server.resources.cpu_absolute)}%
+                            </div>
+                          </div>
+                        ) : stats ? (
                           <div className="space-y-1 text-sm">
                             <div className="flex items-center gap-1">
                               <MemoryStick className="h-3 w-3" />

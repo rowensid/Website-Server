@@ -8,6 +8,7 @@ import { Monitor, Server, Code, Gamepad2, Users, Zap, Shield, Globe, ChevronRigh
 import Link from 'next/link'
 import Logo from '@/components/logo'
 
+
 interface StatsData {
   totalUsers: number
   totalServices: number

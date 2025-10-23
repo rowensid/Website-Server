@@ -8,6 +8,7 @@ export async function POST() {
     await db.order.deleteMany({})
     await db.service.deleteMany({})
     await db.user.deleteMany({})
+    await db.pterodactylServer.deleteMany({})
     
     // Create simple test data
     const hashedPassword = await bcrypt.hash('password123', 10)
@@ -44,6 +45,98 @@ export async function POST() {
         isActive: true
       }
     })
+    
+    // Create Pterodactyl servers individually
+    const pteroServers = [
+      {
+        pteroId: "1",
+        identifier: "99cbffc1",
+        name: "AMERTA ROLEPLAY V1.5",
+        description: "PAKET II FIVEM SERVER ROLEPLAY'S",
+        status: "running",
+        suspended: false,
+        limits: { memory: 4096, disk: 71680, cpu: 100 },
+        featureLimits: { databases: 1, allocations: 0, backups: 1, players: 64 },
+        nodeId: "1",
+        allocationId: "1",
+        nestId: "5",
+        eggId: "15",
+        container: { environment: { MAX_PLAYERS: "64", SERVER_HOSTNAME: "Amerta Roleplay" } },
+        userId: existingOwner.id
+      },
+      {
+        pteroId: "5",
+        identifier: "813a90ef",
+        name: "FELAVITO ROLEPLAY",
+        description: "PAKET 1 FIVEM SERVER ROLEPLAY'S",
+        status: "offline",
+        suspended: false,
+        limits: { memory: 3072, disk: 50000, cpu: 80 },
+        featureLimits: { databases: 1, allocations: 0, backups: 1, players: 128 },
+        nodeId: "1",
+        allocationId: "2",
+        nestId: "5",
+        eggId: "15",
+        container: { environment: { MAX_PLAYERS: "128", SERVER_HOSTNAME: "JAWARA ROLEPLAY" } },
+        userId: existingOwner.id
+      },
+      {
+        pteroId: "7",
+        identifier: "c88c654c",
+        name: "MEDAN CITY ROLEPLAY",
+        description: "PAKET II FIVEM SERVER ROLEPLAY'S",
+        status: "starting",
+        suspended: false,
+        limits: { memory: 4096, disk: 60000, cpu: 100 },
+        featureLimits: { databases: 1, allocations: 0, backups: 1, players: 128 },
+        nodeId: "2",
+        allocationId: "3",
+        nestId: "5",
+        eggId: "15",
+        container: { environment: { MAX_PLAYERS: "128", SERVER_HOSTNAME: "MEDAN CITY" } },
+        userId: existingOwner.id
+      }
+    ]
+    
+    let createdPteroServers = 0
+    for (const serverData of pteroServers) {
+      try {
+        // Try creating with minimal required fields first
+        const minimalServer = await db.pterodactylServer.create({
+          data: {
+            pteroId: serverData.pteroId,
+            identifier: serverData.identifier,
+            name: serverData.name,
+            status: serverData.status,
+            suspended: serverData.suspended,
+            limits: serverData.limits,
+            featureLimits: serverData.featureLimits,
+            nodeId: serverData.nodeId,
+            allocationId: serverData.allocationId,
+            nestId: serverData.nestId,
+            eggId: serverData.eggId,
+            userId: serverData.userId
+          }
+        })
+        
+        // Then update with additional fields
+        await db.pterodactylServer.update({
+          where: { id: minimalServer.id },
+          data: {
+            description: serverData.description,
+            container: serverData.container
+          }
+        })
+        
+        createdPteroServers++
+        console.log(`✅ Created Pterodactyl server: ${serverData.name}`)
+      } catch (error) {
+        console.error(`❌ Failed to create Pterodactyl server ${serverData.name}:`, error)
+        console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
+      }
+    }
+    
+    console.log(`📊 Created ${createdPteroServers} Pterodactyl servers`)
     
     // Create sample services
     await db.service.create({
@@ -148,7 +241,8 @@ export async function POST() {
       stats: {
         users: 3,
         services: 2,
-        orders: 2
+        orders: 2,
+        pterodactylServers: 3
       }
     })
 

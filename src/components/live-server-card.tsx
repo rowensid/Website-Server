@@ -4,6 +4,7 @@ import React, { memo, useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
 import { 
   Server, 
   Users, 
@@ -15,7 +16,11 @@ import {
   Clock,
   Globe,
   Zap,
-  RefreshCw
+  RefreshCw,
+  Play,
+  Square,
+  RotateCcw,
+  Power
 } from 'lucide-react'
 
 interface LiveServerData {
@@ -38,9 +43,8 @@ interface LiveServerData {
     tx: number
   }
   disk?: number
-  isRealData?: boolean
-  lastUpdate?: string
-  responseTime?: number
+  realResources?: any
+  resourceDataSource?: 'pterodactyl_client_api' | 'pterodactyl_application_api' | 'simulated'
 }
 
 interface LiveServerCardProps {
@@ -48,7 +52,7 @@ interface LiveServerCardProps {
 }
 
 // Memoized sub-components to prevent unnecessary re-renders
-const ServerStatus = memo<{ status: string; isRealData?: boolean }>(({ status, isRealData }) => {
+const ServerStatus = memo<{ status: string; isRealData?: boolean; resourceDataSource?: 'pterodactyl_client_api' | 'pterodactyl_application_api' | 'simulated' }>(({ status, isRealData, resourceDataSource }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'running':
@@ -87,9 +91,16 @@ const ServerStatus = memo<{ status: string; isRealData?: boolean }>(({ status, i
         {getStatusIcon(status)}
         <span className="ml-1">{status.toUpperCase()}</span>
       </Badge>
-      {isRealData && (
-        <Badge variant="outline" className="text-green-400 border-green-400/30 text-xs">
-          LIVE
+      {resourceDataSource && (
+        <Badge variant="outline" className={`text-xs ${
+          resourceDataSource === 'pterodactyl_client_api' 
+            ? 'text-green-400 border-green-400/30' 
+            : resourceDataSource === 'pterodactyl_application_api'
+            ? 'text-blue-400 border-blue-400/30'
+            : 'text-orange-400 border-orange-400/30'
+        }`}>
+          {resourceDataSource === 'pterodactyl_client_api' ? 'LIVE' : 
+           resourceDataSource === 'pterodactyl_application_api' ? 'API' : 'SIM'}
         </Badge>
       )}
     </div>
@@ -215,6 +226,40 @@ ServerInfo.displayName = 'ServerInfo'
 const LiveServerCard = memo<LiveServerCardProps>(({ server }) => {
   const [isUpdating, setIsUpdating] = useState(false)
   const [prevData, setPrevData] = useState(server)
+  const [isControlling, setIsControlling] = useState(false)
+
+  // Fungsi buat kontrol server
+  const controlServer = async (action: 'start' | 'stop' | 'restart' | 'kill') => {
+    setIsControlling(true)
+    try {
+      const response = await fetch('/api/server-control', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          serverId: server.id.toString(),
+          action: action
+        })
+      })
+
+      const result = await response.json()
+      
+      if (response.ok) {
+        console.log(`✅ ${action.toUpperCase()} command sent to ${server.name}`)
+        // Refresh data setelah kontrol
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        console.error(`❌ Failed to ${action} server:`, result.error)
+      }
+    } catch (error) {
+      console.error(`❌ Error controlling server:`, error)
+    } finally {
+      setIsControlling(false)
+    }
+  }
 
   // Detect data changes to show subtle update animation
   useEffect(() => {
@@ -262,9 +307,90 @@ const LiveServerCard = memo<LiveServerCardProps>(({ server }) => {
               <RefreshCw className="h-3 w-3 ml-2 text-purple-400 animate-spin" />
             )}
           </CardTitle>
-          <ServerStatus status={server.status} isRealData={server.isRealData} />
+          <ServerStatus status={server.status} isRealData={server.isRealData} resourceDataSource={server.resourceDataSource} />
         </div>
         <p className="text-gray-400 text-sm">{server.description || `${server.name} server`}</p>
+        
+        {/* Server Control Buttons */}
+        <div className="flex items-center gap-2 mt-3">
+          {server.status === 'stopped' ? (
+            <Button
+              size="sm"
+              onClick={() => controlServer('start')}
+              disabled={isControlling}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+            >
+              {isControlling ? (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <Play className="h-3 w-3 mr-1" />
+                  Start
+                </>
+              )}
+            </Button>
+          ) : (
+            <>
+              <Button
+                size="sm"
+                onClick={() => controlServer('restart')}
+                disabled={isControlling}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1"
+              >
+                {isControlling ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                    Restarting...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Restart
+                  </>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => controlServer('stop')}
+                disabled={isControlling}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white text-xs px-3 py-1"
+              >
+                {isControlling ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                    Stopping...
+                  </>
+                ) : (
+                  <>
+                    <Square className="h-3 w-3 mr-1" />
+                    Stop
+                  </>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => controlServer('kill')}
+                disabled={isControlling}
+                className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1"
+              >
+                {isControlling ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                    Killing...
+                  </>
+                ) : (
+                  <>
+                    <Power className="h-3 w-3 mr-1" />
+                    Kill
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+        </div>
       </CardHeader>
       
       <CardContent className="space-y-4">
@@ -323,6 +449,43 @@ const LiveServerCard = memo<LiveServerCardProps>(({ server }) => {
             <span>Updated: {new Date(server.lastUpdate).toLocaleTimeString()}</span>
           )}
         </div>
+
+        {/* Resource Data Source Info */}
+        {server.resourceDataSource && (
+          <div className="text-xs text-gray-500 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                {server.resourceDataSource === 'pterodactyl_client_api' ? (
+                  <>
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span className="text-green-400">Live data from Pterodactyl</span>
+                  </>
+                ) : server.resourceDataSource === 'pterodactyl_application_api' ? (
+                  <>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span className="text-blue-400">Application API data</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                    <span className="text-orange-400">Simulated data</span>
+                  </>
+                )}
+              </span>
+              {server.responseTime && (
+                <span>{server.responseTime}ms</span>
+              )}
+            </div>
+            {server.realResources && (
+              <div className="mt-1 text-gray-600">
+                <span>State: {server.realResources.state || 'Unknown'}</span>
+                {server.realResources.disk_bytes && (
+                  <span className="ml-2">Disk: {Math.round(server.realResources.disk_bytes / 1024 / 1024)}MB</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   )

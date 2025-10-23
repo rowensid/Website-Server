@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,22 +8,20 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  name          String?
-  password      String
-  role          Role     @default(USER)
-  isActive      Boolean  @default(true)
-  avatar        String?  // Add avatar field
-  lastLoginAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  // Relations
-  services      Service[]
-  orders        Order[]
-  sessions      Session[]
-  pteroServers  PterodactylServer[]
+  id           String              @id @default(cuid())
+  email        String              @unique
+  name         String?
+  password     String
+  role         Role                @default(USER)
+  isActive     Boolean             @default(true)
+  avatar       String?
+  lastLoginAt  DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  orders       Order[]
+  pteroServers PterodactylServer[]
+  services     Service[]
+  sessions     Session[]
 }
 
 model Session {
@@ -38,27 +30,25 @@ model Session {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Service {
-  id          String      @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
   type        ServiceType
   status      ServiceStatus @default(PENDING)
   price       Float
-  config      Json?       // Store server configuration
-  ip          String?     // Server IP address
-  port        Int?        // Server port
-  description String?     // Service description
+  config      Json?
+  ip          String?
+  port        Int?
+  description String?
   userId      String
   expiresAt   DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   orders      Order[]
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Order {
@@ -70,41 +60,51 @@ model Order {
   paymentMethod String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   service       Service?    @relation(fields: [serviceId], references: [id])
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PterodactylServer {
-  id              String   @id @default(cuid())
-  pteroId         String   @unique // Pterodactyl server ID
-  identifier      String   @unique // Server identifier
-  name            String
-  description     String?
-  status          String   // running, stopped, etc.
-  suspended       Boolean  @default(false)
-  limits          Json     // Memory, disk, CPU limits
-  featureLimits   Json     // Databases, allocations, backups
-  userId          String?  // Link to local user if owned
-  nodeId          String   // Pterodactyl node ID
-  allocationId    String   // Primary allocation ID
-  nestId          String   // Pterodactyl nest ID
-  eggId           String   // Pterodactyl egg ID
-  container       Json?    // Container configuration
-  lastSyncAt      DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id            String   @id @default(cuid())
+  pteroId       String   @unique
+  identifier    String   @unique
+  name          String
+  description   String?
+  status        String
+  suspended     Boolean  @default(false)
+  limits        Json
+  featureLimits Json
+  userId        String?
+  nodeId        String
+  allocationId  String
+  allocationIp  String?
+  allocationPort Int?
+  allocationAlias String?
+  nestId        String
+  eggId         String
+  container     Json?
+  // Resource monitoring fields
+  cpuUsage      Float?
+  memoryUsage   Int?
+  memoryLimit   Int?
+  diskUsage     Int?
+  diskLimit     Int?
+  networkRx     Int?
+  networkTx     Int?
+  uptime        Int?
+  lastSyncAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User?    @relation(fields: [userId], references: [id])
 }
 
 model ApiConfiguration {
   id          String   @id @default(cuid())
-  name        String   @unique // Configuration name (e.g., "pterodactyl")
-  apiUrl      String   // API base URL
-  apiKey      String   // API key (encrypted in real app)
+  name        String   @unique
+  apiUrl      String
+  apiKey      String
   isActive    Boolean  @default(true)
-  description String?  // Optional description
+  description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
