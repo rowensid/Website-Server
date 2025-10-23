@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     const PTERODACTYL_URL = process.env.PTERODACTYL_URL;
-    const API_KEY = process.env.PTERODACTYL_API_KEY;
+    const API_KEY = process.env.PTERODACTYL_BYPASS_TOKEN || process.env.PTERODACTYL_API_KEY;
 
     if (!PTERODACTYL_URL || !API_KEY) {
       return NextResponse.json({

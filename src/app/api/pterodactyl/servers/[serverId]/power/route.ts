@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Pterodactyl API Configuration
-const PTERODACTYL_API_URL = process.env.PTERODACTYL_API_URL || 'https://panel.aberzz.my.id'
-const PTERODACTYL_API_KEY = process.env.PTERODACTYL_API_KEY || 'ptla_oaieo4yp4BQP3VXosTCjRkE8QaX1zGvLevxca1ncDx5'
+const PTERODACTYL_API_URL = process.env.PTERODACTYL_URL || 'https://panel.androwproject.cloud'
+const PTERODACTYL_API_KEY = process.env.PTERODACTYL_BYPASS_TOKEN || process.env.PTERODACTYL_API_KEY || '3oNEVm8MxY1U0A_8Czb0eJ-9eceEEPJ9bCj3bGTg'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { serverId: string } }
+  { params }: { params: Promise<{ serverId: string }> }
 ) {
   try {
     const { signal } = await request.json()
-    const serverId = params.serverId
+    const serverId = (await params).serverId
 
     if (!signal) {
       return NextResponse.json(
@@ -51,7 +51,8 @@ export async function POST(
       headers: {
         'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'A&S-Studio-Pterodactyl-Bypass/1.0'
       },
       body: JSON.stringify({
         signal: signal
@@ -117,10 +118,10 @@ export async function POST(
 // Get current power state of a server
 export async function GET(
   request: NextRequest,
-  { params }: { params: { serverId: string } }
+  { params }: { params: Promise<{ serverId: string }> }
 ) {
   try {
-    const serverId = params.serverId
+    const serverId = (await params).serverId
 
     console.log(`🔍 Getting power state for server ${serverId}`)
 
@@ -129,7 +130,8 @@ export async function GET(
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'User-Agent': 'A&S-Studio-Pterodactyl-Bypass/1.0'
       }
     })
 

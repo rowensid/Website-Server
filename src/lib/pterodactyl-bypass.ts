@@ -1,5 +1,6 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { NextRequest } from 'next/server';
+import https from 'https';
 
 export interface CloudflareConfig {
   apiToken?: string;
@@ -99,7 +100,7 @@ class PterodactylBypass {
         },
         timeout: this.config.timeout,
         // Allow self-signed certificates for direct IP
-        httpsAgent: new (require('https').Agent)({
+        httpsAgent: new https.Agent({
           rejectUnauthorized: false
         })
       });
