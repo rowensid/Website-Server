@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { insecureFetch } from '@/lib/fetch-ssl'
 
 // Pterodactyl API Configuration
-const PTERODACTYL_API_URL = process.env.PTERODACTYL_URL || 'https://panel.androwproject.cloud'
-const PTERODACTYL_API_KEY = process.env.PTERODACTYL_API_KEY || process.env.PTERODACTYL_BYPASS_TOKEN || 'ptla_oaieo4yp4BQP3VXosTCjRkE8QaX1zGvLevxca1ncDx5'
+const PTERODACTYL_API_URL = process.env.PTERODACTYL_API_URL || 'https://panel.aberzz.my.id'
+const PTERODACTYL_API_KEY = process.env.PTERODACTYL_API_KEY || 'ptla_oaieo4yp4BQP3VXosTCjRkE8QaX1zGvLevxca1ncDx5'
 
 export async function POST() {
   console.log('=== PTERODACTYL SYNC API CALLED AT:', new Date().toISOString(), '===')
@@ -13,13 +12,13 @@ export async function POST() {
     console.log('🔗 Using Pterodactyl panel:', PTERODACTYL_API_URL)
     console.log('🔑 Using API Key:', PTERODACTYL_API_KEY.substring(0, 15) + '...')
     
-    // Fetch real servers from Pterodactyl Application API with SSL bypass
-    const serversResponse = await insecureFetch(`${PTERODACTYL_API_URL}/api/application/servers?include=allocations,node`, {
+    // Fetch real servers from Pterodactyl Application API
+    const serversResponse = await fetch(`${PTERODACTYL_API_URL}/api/application/servers?include=allocations,node`, {
       headers: {
         'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
-        'Accept': 'Application/vnd.pterodactyl.v1+json',
+        'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'User-Agent': 'A&S-Studio-Pterodactyl-Bypass/1.0'
+        'User-Agent': 'Pterodactyl-Client/1.0'
       }
     })
 
@@ -65,70 +64,40 @@ export async function POST() {
       console.log(`  📊 Limits: Memory=${attributes.limits?.memory || 0}MB, Disk=${attributes.limits?.disk || 0}MB, CPU=${attributes.limits?.cpu || 0}%`)
       console.log(`  🌐 Allocation: ${allocation.ip || 'N/A'}:${allocation.port || 'N/A'}`)
       
-      // Fetch real-time resource usage for this server - try Application API first, then Client API
+      // Fetch real-time resource usage for this server using Client API
       let resourceData = null
       try {
-        // Try Application API resources endpoint first
-        const resourceResponse = await insecureFetch(`${PTERODACTYL_API_URL}/api/application/servers/${attributes.id}/resources`, {
+        const resourceResponse = await fetch(`${PTERODACTYL_API_URL}/api/client/servers/${attributes.identifier}/resources`, {
           headers: {
             'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
-            'Accept': 'Application/vnd.pterodactyl.v1+json',
-            'User-Agent': 'A&S-Studio-Pterodactyl-Bypass/1.0'
+            'Accept': 'application/json',
+            'User-Agent': 'Pterodactyl-Client/1.0'
           }
         })
         
         if (resourceResponse.ok) {
           resourceData = await resourceResponse.json()
-          console.log(`📊 Got resource data from Application API for ${attributes.name}`)
+          console.log(`📊 Got resource data for ${attributes.name}`)
         } else {
-          // Try Client API as fallback
-          const clientResourceResponse = await insecureFetch(`${PTERODACTYL_API_URL}/api/client/servers/${attributes.identifier}/resources`, {
-            headers: {
-              'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
-              'Accept': 'application/json',
-              'User-Agent': 'A&S-Studio-Pterodactyl-Bypass/1.0'
-            }
-          })
-          
-          if (clientResourceResponse.ok) {
-            resourceData = await clientResourceResponse.json()
-            console.log(`📊 Got resource data from Client API for ${attributes.name}`)
-          } else {
-            console.log(`⚠️ Resource API returned ${resourceResponse.status}/${clientResourceResponse.status} for ${attributes.name}`)
-          }
+          console.log(`⚠️ Resource API returned ${resourceResponse.status} for ${attributes.name}`)
         }
       } catch (error) {
         console.log(`⚠️ Could not fetch resource data for ${attributes.name}:`, error)
       }
       
-      // Fetch server details to get allocation info using Application API
+      // Fetch server details to get allocation info
       let serverDetails = null
       try {
-        const detailsResponse = await insecureFetch(`${PTERODACTYL_API_URL}/api/application/servers/${attributes.id}?include=allocations`, {
+        const detailsResponse = await fetch(`${PTERODACTYL_API_URL}/api/client/servers/${attributes.identifier}`, {
           headers: {
             'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
-            'Accept': 'Application/vnd.pterodactyl.v1+json',
-            'User-Agent': 'A&S-Studio-Pterodactyl-Bypass/1.0'
+            'Accept': 'application/json',
+            'User-Agent': 'Pterodactyl-Client/1.0'
           }
         })
         
         if (detailsResponse.ok) {
           serverDetails = await detailsResponse.json()
-          console.log(`📊 Got server details from Application API for ${attributes.name}`)
-        } else {
-          // Try Client API as fallback
-          const clientDetailsResponse = await insecureFetch(`${PTERODACTYL_API_URL}/api/client/servers/${attributes.identifier}`, {
-            headers: {
-              'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
-              'Accept': 'application/json',
-              'User-Agent': 'A&S-Studio-Pterodactyl-Bypass/1.0'
-            }
-          })
-          
-          if (clientDetailsResponse.ok) {
-            serverDetails = await clientDetailsResponse.json()
-            console.log(`📊 Got server details from Client API for ${attributes.name}`)
-          }
         }
       } catch (error) {
         console.log(`⚠️ Could not fetch server details for ${attributes.name}:`, error)

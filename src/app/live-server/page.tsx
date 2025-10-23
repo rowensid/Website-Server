@@ -5,6 +5,7 @@ import {
   Activity, 
   Cpu, 
   HardDrive, 
+  Users, 
   Server, 
   Zap, 
   Clock,
@@ -41,26 +42,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import AestheticHeader from '@/components/aesthetic-header'
 
-// Animasi number transition yang sangat smooth
-const AnimatedNumber = ({ value, duration = 300 }: { value: number; duration?: number }) => {
-  const [displayValue, setDisplayValue] = useState(value)
-
-  useEffect(() => {
-    if (value !== displayValue) {
-      const timer = setTimeout(() => {
-        setDisplayValue(value)
-      }, 10) // Very fast transition
-      return () => clearTimeout(timer)
-    }
-  }, [value, displayValue])
-
-  return (
-    <span className="transition-all duration-300 ease-out text-white">
-      {displayValue}
-    </span>
-  )
-}
-
 interface ServerData {
   id: string
   name: string
@@ -73,6 +54,10 @@ interface ServerData {
   storage: {
     used: number
     total: number
+  }
+  players: {
+    current: number
+    max: number
   }
   network: {
     upload: number
@@ -89,15 +74,11 @@ export default function LiveServerPage() {
   const [servers, setServers] = useState<ServerData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [mounted, setMounted] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [selectedFilter, setSelectedFilter] = useState('all')
+  const [refreshInterval, setRefreshInterval] = useState(3000)
   const [serverActions, setServerActions] = useState<{[key: string]: {loading: boolean, error: string | null}}>({})
-
-  // Ensure component is mounted before fetching data
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // Function to handle server power actions
   const handleServerAction = async (serverId: string, action: 'start' | 'stop' | 'restart' | 'kill') => {
@@ -253,21 +234,12 @@ export default function LiveServerPage() {
     }
   }
 
-  const fetchServerData = async (silent = false) => {
+  const fetchServerData = async () => {
     try {
-      console.log('🚀 fetchServerData called, silent:', silent);
-      
-      // Jangan tampilkan loading state sama sekali untuk silent refresh
-      if (!silent) {
-        setLoading(true);
-      }
-      // Untuk silent refresh, jangan ubah loading state apapun
-      
+      setLoading(true);
       setError(null);
       
-      console.log('📡 Fetching from /api/pterodactyl');
-      // Fetch real Pterodactyl servers
-      const response = await fetchWithDetailedError(`/api/pterodactyl?t=${Date.now()}`, {
+      const response = await fetchWithDetailedError('/api/servers/live', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -276,190 +248,39 @@ export default function LiveServerPage() {
         cache: 'no-store'
       });
       
-      console.log('📥 API Response:', response);
-      console.log('📥 Response.success:', response.success);
-      console.log('📥 Response.servers:', response.servers);
-      console.log('📥 Servers count:', response.servers?.length || 0);
-      console.log('📥 Condition check:', response.success, '&&', !!response.servers, '=', response.success && !!response.servers);
-      
-      // Log to server for debugging
-      try {
-        await fetch('/api/debug-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: 'Frontend fetchServerData response',
-            data: {
-              success: response.success,
-              serverCount: response.servers?.length || 0,
-              servers: response.servers?.map(s => ({ id: s.id, name: s.name, status: s.status }))
-            }
-          })
-        });
-      } catch (e) {
-        // Ignore debug log errors
-      }
-      
-      if (response.success && response.servers) {
-        console.log('🔄 Starting server transformation...');
-        // Transform Pterodactyl data to our ServerData format
-        const transformedServers = await Promise.all(response.servers.map(async (server: any) => {
-          // Fetch real-time resources for each server
-          let resourceData = null;
-          try {
-            console.log(`🔄 Fetching resources for server ${server.name} (ID: ${server.id})`);
-            const resourceResponse = await fetch(`/api/pterodactyl/servers/${server.id}/resources`);
-            if (resourceResponse.ok) {
-              const resourceResult = await resourceResponse.json();
-              if (resourceResult.success && resourceResult.data) {
-                resourceData = resourceResult.data.attributes;
-                console.log(`✅ Got resources for ${server.name}:`, resourceData.resources);
-              }
-            } else {
-              console.log(`❌ Failed to fetch resources for ${server.name}: ${resourceResponse.status}`);
-            }
-          } catch (error) {
-            console.log(`❌ Error fetching resources for ${server.name}:`, error);
-          }
-          
-          // Use real resource data if available, otherwise generate based on server limits
-          const isOnline = server.status === 'running' || server.status === 'online';
-          const limits = server.limits || { memory: 4096, disk: 20480 };
-          
-          // If limits are 0, set default values for better display
-          const effectiveMemoryLimit = limits.memory > 0 ? limits.memory : 4096;
-          const effectiveDiskLimit = limits.disk > 0 ? limits.disk : 20480;
-          
-          let cpuUsage, memoryUsage, diskUsage, networkUpload, networkDownload, uptimeSeconds;
-          
-          if (resourceData && resourceData.resources) {
-            // Use real resource data from API with proper conversion
-            cpuUsage = Math.round(resourceData.resources.cpu_absolute * 100);
-            memoryUsage = Math.round(resourceData.resources.memory_bytes / 1024 / 1024);
-            diskUsage = Math.round(resourceData.resources.disk_bytes / 1024 / 1024);
-            networkUpload = Math.round(resourceData.resources.network_tx_bytes / 1024);
-            networkDownload = Math.round(resourceData.resources.network_rx_bytes / 1024);
-            uptimeSeconds = Math.round(resourceData.resources.uptime / 1000);
-            
-            console.log(`📊 Server ${server.name} - Real data: CPU=${cpuUsage}%, Memory=${memoryUsage}MB, Disk=${diskUsage}MB, Uptime=${uptimeSeconds}s`);
-          } else {
-            // Fallback to generated data
-            cpuUsage = isOnline ? Math.floor(Math.random() * 80) + 10 : 0;
-            memoryUsage = isOnline ? Math.floor(Math.random() * (effectiveMemoryLimit * 0.8)) : 0;
-            diskUsage = Math.floor(Math.random() * (effectiveDiskLimit * 0.9)) + (effectiveDiskLimit * 0.1);
-            networkUpload = isOnline ? Math.floor(Math.random() * 2000) + 100 : 0;
-            networkDownload = isOnline ? Math.floor(Math.random() * 2000) + 100 : 0;
-            uptimeSeconds = Math.floor(Math.random() * 86400); // Random up to 24 hours
-            
-            console.log(`📊 Server ${server.name} - Fallback data: CPU=${cpuUsage}%, Memory=${memoryUsage}MB, Disk=${diskUsage}MB, Uptime=${uptimeSeconds}s`);
-          }
-          
-          // Format uptime properly
-          const formatUptime = (seconds: number) => {
-            const days = Math.floor(seconds / 86400);
-            const hours = Math.floor((seconds % 86400) / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            
-            if (days > 0) return `${days}d ${hours}h ${minutes}m`;
-            if (hours > 0) return `${hours}h ${minutes}m`;
-            return `${minutes}m`;
-          };
-          
-          return {
-            id: server.id,
-            name: server.name,
-            status: server.suspended ? 'offline' : (isOnline ? 'online' : 'offline'),
-            cpu: cpuUsage,
-            memory: {
-              used: memoryUsage,
-              total: effectiveMemoryLimit
-            },
-            storage: {
-              used: diskUsage,
-              total: effectiveDiskLimit
-            },
-            network: {
-              upload: networkUpload,
-              download: networkDownload
-            },
-            uptime: formatUptime(uptimeSeconds),
-            location: server.relationships?.node?.attributes?.name || 'Unknown',
-            game: 'FiveM',
-            ip: server.relationships?.allocations?.data?.[0] ? 
-              `${server.relationships.allocations.data[0].attributes.ip}:${server.relationships.allocations.data[0].attributes.port}` : 
-              'N/A',
-            lastUpdate: new Date().toISOString()
-          };
-        }));
-        
-        setServers(transformedServers);
-        console.log(`✅ Loaded ${transformedServers.length} servers from Pterodactyl panel`);
-        
-        // Log to server for debugging
-        try {
-          await fetch('/api/debug-log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: 'Frontend setServers called',
-              data: {
-                serverCount: transformedServers.length,
-                servers: transformedServers.map(s => ({ 
-                  id: s.id, 
-                  name: s.name, 
-                  status: s.status,
-                  cpu: s.cpu,
-                  memory: s.memory,
-                  storage: s.storage,
-                  uptime: s.uptime
-                }))
-              }
-            })
-          });
-        } catch (e) {
-          // Ignore debug log errors
-        }
+      // Handle both array and object response formats
+      if (Array.isArray(response)) {
+        setServers(response);
+      } else if (response.success && response.servers) {
+        setServers(response.servers);
+      } else if (response.servers) {
+        setServers(response.servers);
       } else {
-        console.log('No servers found in Pterodactyl panel');
+        console.log('Unexpected response format:', response);
         setServers([]);
       }
     } catch (error: any) {
-      console.error('❌ Failed to fetch server data:', error);
-      console.error('❌ Error details:', error.message);
-      console.error('❌ Error stack:', error.stack);
+      console.error('Failed to fetch server data:', error);
       setError(error.message);
       setServers([]);
     } finally {
-      if (!silent) {
-        setLoading(false);
-      }
-      // Untuk silent refresh, jangan ubah loading state apapun
+      setLoading(false);
     }
   }
 
   const refreshServers = async () => {
     setLoading(true)
-    await fetchServerData(false)
+    await fetchServerData()
   }
 
   useEffect(() => {
-    if (!mounted) return;
+    fetchServerData()
     
-    console.log('🚀 Component mounted, starting data fetch');
-    fetchServerData(false)
-    
-    // Auto refresh setiap 5 detik - terus jalan tanpa tombol
-    console.log('🔄 Starting auto-refresh every 5 seconds')
-    const interval = setInterval(() => {
-      console.log('🔄 Auto refresh - updating data from panel')
-      fetchServerData(true) // Silent refresh untuk update data tanpa loading
-    }, 5000) // Fixed 5 seconds
-    
-    return () => {
-      console.log('⏹️ Stopping auto-refresh')
-      clearInterval(interval)
+    if (autoRefresh) {
+      const interval = setInterval(fetchServerData, refreshInterval)
+      return () => clearInterval(interval)
     }
-  }, [mounted])
+  }, [autoRefresh, refreshInterval])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -565,10 +386,10 @@ export default function LiveServerPage() {
             <span className="text-sm font-medium text-purple-300">CPU</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-white"><AnimatedNumber value={server.cpu} />%</span>
+            <span className="text-sm font-bold text-white">{server.cpu}%</span>
             <Progress 
               value={server.cpu} 
-              className={`w-20 h-2 transition-all duration-500 ease-out ${
+              className={`w-20 h-2 ${
                 server.cpu > 80 ? 'bg-red-950/50' : 
                 server.cpu > 60 ? 'bg-yellow-950/50' : 
                 'bg-green-950/50'
@@ -592,12 +413,12 @@ export default function LiveServerPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-white">
-              <AnimatedNumber value={Math.round(server.memory.used / 1024 * 100) / 100} />GB
+              {formatBytes(server.memory.used * 1024 * 1024)}
             </span>
             <span className="text-xs text-purple-400/70">/ {formatBytes(server.memory.total * 1024 * 1024)}</span>
             <Progress 
               value={(server.memory.used / server.memory.total) * 100} 
-              className="w-20 h-2 bg-purple-950/50 transition-all duration-500 ease-out"
+              className="w-20 h-2 bg-purple-950/50"
             />
           </div>
         </div>
@@ -613,11 +434,11 @@ export default function LiveServerPage() {
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1">
               <TrendingUp className="h-3 w-3 text-green-400" />
-              <span className="text-green-400"><AnimatedNumber value={Math.round(server.network.upload)} />KB/s</span>
+              <span className="text-green-400">{formatBytes(server.network.upload * 1024)}/s</span>
             </div>
             <div className="flex items-center gap-1">
               <TrendingDown className="h-3 w-3 text-blue-400" />
-              <span className="text-blue-400"><AnimatedNumber value={Math.round(server.network.download)} />KB/s</span>
+              <span className="text-blue-400">{formatBytes(server.network.download * 1024)}/s</span>
             </div>
           </div>
         </div>
@@ -737,10 +558,10 @@ export default function LiveServerPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-pink-500/10 animate-pulse"></div>
           <div className="relative text-center py-8">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent mb-2">
-              Pterodactyl Server Monitoring
+              Live Server Monitoring
             </h1>
             <p className="text-purple-300 text-lg">
-              Real-time monitoring of Pterodactyl game servers with live resource tracking
+              Real-time monitoring of all game servers and their performance metrics
             </p>
           </div>
         </div>
@@ -761,7 +582,17 @@ export default function LiveServerPage() {
               </SelectContent>
             </Select>
             
-
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`border-purple-500/30 text-purple-200 hover:bg-purple-500/10 ${
+                autoRefresh ? 'bg-purple-500/20 border-purple-400/60' : ''
+              }`}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
+              Auto Refresh
+            </Button>
             
             <Button
               variant="outline"
@@ -828,17 +659,17 @@ export default function LiveServerPage() {
           <Card className="relative overflow-hidden bg-black/40 border border-purple-500/20 backdrop-blur-sm hover:border-purple-400/40 transition-all duration-300 group">
             <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-purple-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-purple-300">Active Servers</CardTitle>
+              <CardTitle className="text-sm font-medium text-purple-300">Total Players</CardTitle>
               <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-600/20">
-                <CheckCircle className="h-4 w-4 text-purple-400" />
+                <Users className="h-4 w-4 text-purple-400" />
               </div>
             </CardHeader>
             <CardContent className="relative z-10">
               <div className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-                {servers.filter(s => s.status === 'online').length}
+                {servers.reduce((acc, s) => acc + s.players.current, 0)}
               </div>
               <p className="text-xs text-purple-400/70 mt-2">
-                Currently online
+                Across all servers
               </p>
             </CardContent>
           </Card>

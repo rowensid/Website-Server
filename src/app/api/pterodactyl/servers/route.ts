@@ -6,8 +6,8 @@ export async function GET(request: NextRequest) {
   
   try {
     const { searchParams } = new URL(request.url);
-    const panelUrl = searchParams.get('panelUrl') || process.env.PTERODACTYL_URL;
-    const apiKey = searchParams.get('apiKey') || process.env.PTERODACTYL_API_KEY;
+    const panelUrl = searchParams.get('panelUrl');
+    const apiKey = searchParams.get('apiKey');
 
     if (!panelUrl || !apiKey) {
       return NextResponse.json(
@@ -16,122 +16,83 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('Using panel URL:', panelUrl);
-    console.log('Using API key:', apiKey.substring(0, 10) + '...');
-
-    // Fetch servers from Pterodactyl Application API
-    const response = await insecureFetch(`${panelUrl}/api/application/servers?include=allocations,location,node,user`, {
+    // Fetch servers from Pterodactyl API
+    const response = await insecureFetch(`${panelUrl}/api/application/servers?include=allocations,location,node`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'Application/vnd.pterodactyl.v1+json',
         'Content-Type': 'application/json',
-        'User-Agent': 'A&S-Studio-Pterodactyl-Integration/1.0'
       },
     });
 
     if (!response.ok) {
-      console.error('Pterodactyl API error:', response.status, response.statusText);
-      const errorText = await response.text();
-      console.error('Error response:', errorText);
-      
-      if (response.status === 401) {
-        return NextResponse.json(
-          { error: 'Invalid API key. Please check your Pterodactyl Application API key.' },
-          { status: 401 }
-        );
-      } else if (response.status === 403) {
-        return NextResponse.json(
-          { error: 'Access denied. API key may not have sufficient permissions.' },
-          { status: 403 }
-        );
-      }
-      
-      throw new Error(`Failed to fetch servers: ${response.status} - ${response.statusText}`);
+      throw new Error(`Failed to fetch servers: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('Raw Pterodactyl response:', JSON.stringify(data, null, 2));
-    
     const servers = data.data || [];
-    console.log(`Found ${servers.length} servers from Pterodactyl panel`);
 
-    if (servers.length === 0) {
-      console.log('No servers found in Pterodactyl panel');
-      return NextResponse.json({
-        success: true,
-        servers: [],
-        message: 'No servers found in Pterodactyl panel'
-      });
-    }
-
-    // Process servers with real data from Pterodactyl
+    // Process servers with real-time status
     const serversWithStatus = servers.map((server: any) => {
       const attributes = server.attributes;
       const relationships = attributes.relationships || {};
-      const allocation = relationships.allocations?.data?.[0]?.attributes || {};
-      const node = relationships.node?.data?.attributes || {};
-      const user = relationships.user?.data?.attributes || {};
       
-      console.log(`Processing server: ${attributes.name}`);
-      console.log(`  - Status: ${attributes.status || 'unknown'}`);
-      console.log(`  - Limits:`, attributes.limits);
-      console.log(`  - Allocation: ${allocation.ip}:${allocation.port}`);
-      console.log(`  - Node: ${node.name || 'Unknown'}`);
+      // Determine status based on server description and other indicators
+      // Since we can't access real-time resources with application API,
+      // we'll use a different approach
+      let status = 'offline';
       
-      // Get server status - Pterodactyl doesn't provide real-time status in Application API
-      // We'll use the server's current state from the attributes or default to running for demo
-      let status = attributes.status || 'running';
-      
-      // Create the server object with real Pterodactyl data
+      // Check if server has any allocation information that might indicate it's running
+      if (relationships.allocations?.data && relationships.allocations.data.length > 0) {
+        // Find the default allocation or use the first one
+        const defaultAllocation = relationships.allocations.data[0];
+        
+        if (defaultAllocation && defaultAllocation.attributes) {
+          // Server has network allocation - could be running
+          // We'll mark it as unknown for now, and let the frontend handle the real-time check
+          status = 'unknown';
+        }
+      }
+
+      // Create the result without spreading attributes first to avoid conflicts
+      const firstAllocation = relationships.allocations?.data?.[0];
       const result = {
-        id: attributes.id.toString(),
-        pteroId: attributes.id.toString(),
+        id: attributes.id,
         external_id: attributes.external_id,
         uuid: attributes.uuid,
         identifier: attributes.identifier,
         name: attributes.name,
-        description: attributes.description || 'Server Pterodactyl',
+        description: attributes.description,
         status: status,
         current_state: status,
-        suspended: attributes.suspended || false,
-        limits: attributes.limits || { memory: 4096, disk: 20480, cpu: 100 },
-        feature_limits: attributes.feature_limits || { databases: 1, allocations: 1, backups: 1 },
+        suspended: attributes.suspended,
+        limits: attributes.limits,
+        feature_limits: attributes.feature_limits,
         user: attributes.user,
         node: attributes.node,
         allocation: attributes.allocation,
         nest: attributes.nest,
         egg: attributes.egg,
-        container: attributes.container || { environment: {} },
+        container: attributes.container,
         updated_at: attributes.updated_at,
         created_at: attributes.created_at,
-        relationships: relationships,
-        
-        // Additional fields for our frontend
-        node_name: node.name || 'Node 1',
-        allocation_ip: allocation.ip || '127.0.0.1',
-        allocation_port: allocation.port || 30120,
-        allocation_alias: allocation.ip_alias || null,
-        user_email: user.email || 'admin@example.com',
-        user_name: user.username || 'admin',
-        
-        // Resource data (will be fetched separately or generated)
+        relationships: relationships, // Keep relationships for reference
         resources: null,
-        isRealData: true,
-        dataSource: 'pterodactyl_api'
+        isRealData: false,
+        // Add allocation info for manual checking
+        primaryAllocation: firstAllocation,
+        testAllocation: { test: 'test value' }
       };
+      
+      // Debug: log the primaryAllocation
+      console.log(`Server ${attributes.name}: firstAllocation =`, JSON.stringify(firstAllocation, null, 2));
+      console.log(`Server ${attributes.name}: result.primaryAllocation =`, JSON.stringify(result.primaryAllocation, null, 2));
       
       return result;
     });
     
-    console.log(`Successfully processed ${serversWithStatus.length} servers from Pterodactyl panel`);
-    
     return NextResponse.json({
       success: true,
-      servers: serversWithStatus,
-      total: servers.length,
-      source: 'pterodactyl_api',
-      panel_url: panelUrl,
-      timestamp: new Date().toISOString()
+      servers: serversWithStatus
     });
 
   } catch (error) {

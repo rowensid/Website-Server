@@ -39,10 +39,8 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // 等待一小段时间确保cookie被设置
-        await new Promise(resolve => setTimeout(resolve, 100))
         const redirect = searchParams.get('redirect') || '/gateway';
-        window.location.href = redirect; // 使用window.location而不是router.push确保cookie被正确携带
+        router.push(redirect);
       } else {
         setError(data.error || 'Login failed');
       }

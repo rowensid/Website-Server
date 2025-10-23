@@ -1,88 +1,126 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { insecureFetch } from '@/lib/fetch-ssl';
+import { NextRequest, NextResponse } from 'next/server'
+
+// Pterodactyl API Configuration
+const PTERODACTYL_API_URL = process.env.PTERODACTYL_API_URL || 'https://panel.aberzz.my.id'
+const PTERODACTYL_API_KEY = process.env.PTERODACTYL_API_KEY || 'ptla_oaieo4yp4BQP3VXosTCjRkE8QaX1zGvLevxca1ncDx5'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ serverId: string }> }
+  { params }: { params: { serverId: string } }
 ) {
-  console.log(`=== PTERODACTYL SERVER RESOURCES API CALLED FOR SERVER ${(await params).serverId} ===`);
-  
   try {
-    const panelUrl = process.env.PTERODACTYL_URL || 'https://panel.androwproject.cloud';
-    const apiKey = process.env.PTERODACTYL_API_KEY;
-    const serverId = (await params).serverId;
+    const serverId = params.serverId
 
-    if (!panelUrl || !apiKey) {
-      return NextResponse.json(
-        { error: 'Panel URL and API key are required' },
-        { status: 400 }
-      );
+    console.log(`📊 Getting real-time resources for server ${serverId}`)
+
+    // Get real-time server resources from Pterodactyl API
+    const response = await fetch(`${PTERODACTYL_API_URL}/api/client/servers/${serverId}/resources`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      cache: 'no-store'
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`❌ Failed to get server resources for ${serverId}:`, response.status, errorText)
+      
+      // Provide specific error messages
+      if (response.status === 401) {
+        throw new Error('Pterodactyl API key is invalid or expired. Please check your API key configuration.')
+      } else if (response.status === 403) {
+        throw new Error('Access denied. You may not have permission to view this server\'s resources.')
+      } else if (response.status === 404) {
+        throw new Error(`Server with ID ${serverId} not found in Pterodactyl panel.`)
+      } else if (response.status >= 500) {
+        throw new Error('Pterodactyl panel server error. Unable to fetch server resources.')
+      } else {
+        throw new Error(`Failed to get server resources: ${response.status} - ${errorText}`)
+      }
     }
 
-    // Generate realistic resource usage with real-time variation
-    console.log(`Generating realistic resource data for server ${serverId}`);
+    const resources = await response.json()
     
-    // Use server ID as base but add time-based variation for real-time feel
-    const serverIdNum = parseInt(serverId);
-    const currentTime = Date.now();
-    const timeVariation = Math.sin(currentTime / 30000) * 10; // Oscillates every 30 seconds
-    
-    // CPU with real-time variation (15-85%)
-    const baseCpu = 30 + (serverIdNum * 12) % 40;
-    const cpuUsage = Math.max(15, Math.min(85, baseCpu + timeVariation + (Math.random() * 10 - 5)));
-    
-    // Memory with gradual changes
-    const baseMemory = 1536 + (serverIdNum * 768) % 2048;
-    const memoryUsage = Math.max(512, baseMemory + (Math.sin(currentTime / 20000) * 256));
-    
-    // Disk with slow growth (simulating gradual usage)
-    const baseDisk = 8000 + (serverIdNum * 3000) % 15000;
-    const diskUsage = baseDisk + (currentTime / 1000) % 2000; // Slow growth over time
-    
-    // Network with burst patterns
-    const networkBaseRx = 200000 + (serverIdNum * 100000) % 800000;
-    const networkBaseTx = 300000 + (serverIdNum * 150000) % 1200000;
-    const networkBurst = Math.random() > 0.7 ? 2 : 1; // 30% chance of burst
-    const networkRx = networkBaseRx * networkBurst + (Math.random() * 100000);
-    const networkTx = networkBaseTx * networkBurst + (Math.random() * 150000);
-    
-    // Uptime that accumulates over time (in milliseconds)
-    const baseUptime = 3600000 + (serverIdNum * 1800000) % 86400000; // 1 hour to 24 hours base
-    const uptime = baseUptime + (currentTime % 3600000); // Add current session time
+    if (!resources.attributes) {
+      throw new Error('Invalid response format from Pterodactyl API')
+    }
 
-    const resourceData = {
-      object: "server_resources",
-      attributes: {
-        current_state: "running",
-        resources: {
-          cpu_absolute: cpuUsage / 100,
-          memory_bytes: memoryUsage * 1024 * 1024,
-          disk_bytes: diskUsage * 1024 * 1024,
-          network_rx_bytes: networkRx,
-          network_tx_bytes: networkTx,
-          uptime: uptime
-        }
+    // Extract resource data
+    const resourceData = resources.attributes.resources || {}
+    const state = resources.attributes.current_state || 'offline'
+    
+    // Transform data to match our frontend format
+    const transformedResources = {
+      serverId,
+      current_state: state,
+      resources: {
+        cpu_absolute: resourceData.cpu_absolute || 0,
+        memory_bytes: resourceData.memory_bytes || 0,
+        memory_limit_bytes: resourceData.memory_limit_bytes || 0,
+        disk_bytes: resourceData.disk_bytes || 0,
+        disk_limit_bytes: resourceData.disk_limit_bytes || 0,
+        network_rx_bytes: resourceData.network_rx_bytes || 0,
+        network_tx_bytes: resourceData.network_tx_bytes || 0,
+        uptime: resourceData.uptime || 0
+      },
+      // Transformed values for easier frontend consumption
+      transformed: {
+        cpu_percent: Math.round((resourceData.cpu_absolute || 0) * 100),
+        memory_used_mb: Math.round((resourceData.memory_bytes || 0) / 1024 / 1024),
+        memory_total_mb: Math.round((resourceData.memory_limit_bytes || 0) / 1024 / 1024),
+        memory_percent: Math.round(((resourceData.memory_bytes || 0) / (resourceData.memory_limit_bytes || 1)) * 100),
+        disk_used_mb: Math.round((resourceData.disk_bytes || 0) / 1024 / 1024),
+        disk_total_mb: Math.round((resourceData.disk_limit_bytes || 0) / 1024 / 1024),
+        disk_percent: Math.round(((resourceData.disk_bytes || 0) / (resourceData.disk_limit_bytes || 1)) * 100),
+        network_rx_mbps: Math.round((resourceData.network_rx_bytes || 0) / 1024 / 1024 * 8) / 1024,
+        network_tx_mbps: Math.round((resourceData.network_tx_bytes || 0) / 1024 / 1024 * 8) / 1024,
+        uptime_formatted: formatUptime(resourceData.uptime || 0),
+        status: state === 'running' ? 'online' : state === 'starting' ? 'starting' : state === 'stopping' ? 'stopping' : 'offline'
       }
-    };
+    }
 
-    console.log(`Generated resources for server ${serverId}: CPU=${Math.round(cpuUsage)}%, Memory=${Math.round(memoryUsage)}MB, Disk=${Math.round(diskUsage)}MB, Uptime=${Math.round(uptime/1000)}s`);
+    console.log(`✅ Server ${serverId} resources: CPU ${transformedResources.transformed.cpu_percent}%, Memory ${transformedResources.transformed.memory_percent}%`)
 
     return NextResponse.json({
       success: true,
-      data: resourceData,
-      server_id: serverId,
-      source: 'pterodactyl_simulated',
+      data: transformedResources,
       timestamp: new Date().toISOString()
-    });
+    })
 
-  } catch (error) {
-    console.error(`Error fetching resources for server ${serverId}:`, error);
+  } catch (error: any) {
+    console.error('❌ Server resources error:', error)
+    
     return NextResponse.json(
       { 
-        error: 'Failed to fetch server resources',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        success: false,
+        error: error.message || 'Failed to fetch server resources',
+        details: {
+          type: 'RESOURCES_ERROR',
+          serverId: params.serverId,
+          suggestion: 'Check server ID, API connection, and server status',
+          troubleshooting: [
+            'Verify server exists and is accessible',
+            'Check API key has Client API permissions',
+            'Ensure server is not suspended',
+            'Check network connectivity to Pterodactyl panel'
+          ]
+        }
       },
       { status: 500 }
-    );
+    )
   }
+}
+
+// Helper function to format uptime
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
 }

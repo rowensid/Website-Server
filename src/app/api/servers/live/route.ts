@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { insecureFetch } from '@/lib/fetch-ssl'
 
 // Pterodactyl API Configuration
-const PTERODACTYL_API_URL = process.env.PTERODACTYL_URL || 'https://panel.androwproject.cloud'
-const PTERODACTYL_API_KEY = process.env.PTERODACTYL_API_KEY || process.env.PTERODACTYL_BYPASS_TOKEN || 'ptla_oaieo4yp4BQP3VXosTCjRkE8QaX1zGvLevxca1ncDx5'
+const PTERODACTYL_API_URL = process.env.PTERODACTYL_API_URL || 'https://panel.aberzz.my.id'
+const PTERODACTYL_API_KEY = process.env.PTERODACTYL_API_KEY || 'ptla_oaieo4yp4BQP3VXosTCjRkE8QaX1zGvLevxca1ncDx5'
 
 export async function GET() {
   console.log('=== LIVE SERVERS API CALLED AT:', new Date().toISOString(), '===')
@@ -109,50 +108,33 @@ async function transformServersWithRealTimeData(serverList: any[]) {
       let realTimeData = null
       let allocationData = null
       
-      console.log(`🔧 DEBUG - Processing server: ${server.name}`)
-      console.log(`🔧 Debug - Server object for ${server.name}:`, {
-        status: server.status,
-        memoryLimit: server.memoryLimit,
-        diskLimit: server.diskLimit,
-        limits: server.limits,
-        pteroId: server.pteroId
-      })
-      
       try {
-        // Since Pterodactyl panel is behind Cloudflare protection, 
-        // we'll generate realistic data based on database information
-        console.log(`📊 Using database data for ${server.name} (API access blocked by Cloudflare)`)
-        
-        // Get limits from server data
-        const memoryLimit = server.memoryLimit || server.limits?.memory || 4096
-        const diskLimit = server.diskLimit || server.limits?.disk || 20480
-        
-        // Generate realistic resource usage based on server status
-        const isOnline = server.status === 'running' || server.status === 'online'
-        const cpuUsage = isOnline ? Math.floor(Math.random() * 80) + 10 : 0
-        const memoryUsage = isOnline ? Math.floor(Math.random() * (memoryLimit * 0.8)) : 0
-        const diskUsage = Math.floor(Math.random() * (diskLimit * 0.9)) + (diskLimit * 0.1)
-        const networkRx = isOnline ? Math.floor(Math.random() * 1000000) + 100000 : 0
-        const networkTx = isOnline ? Math.floor(Math.random() * 1500000) + 150000 : 0
-        const uptime = isOnline ? Math.floor(Math.random() * 86400000) + 3600000 : 0 // 1-24 hours if online
-        
-        realTimeData = {
-          attributes: {
-            current_state: isOnline ? 'running' : 'offline',
-            resources: {
-              cpu_absolute: cpuUsage, // Already a percentage (10-90)
-              memory_bytes: memoryUsage * 1024 * 1024,
-              disk_bytes: diskUsage * 1024 * 1024,
-              network_rx_bytes: networkRx,
-              network_tx_bytes: networkTx,
-              uptime: uptime
-            }
+        // Fetch real-time resources
+        const resourceResponse = await fetch(`${PTERODACTYL_API_URL}/api/client/servers/${server.identifier}/resources`, {
+          headers: {
+            'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
+            'Accept': 'application/json'
           }
-        }
+        })
         
-        console.log(`✅ Generated realistic data for ${server.name}: CPU=${cpuUsage}%, Memory=${memoryUsage}MB/${memoryLimit}MB`)
+        if (resourceResponse.ok) {
+          realTimeData = await resourceResponse.json()
+        }
+
+        // Fetch server details to get allocation IP
+        const serverResponse = await fetch(`${PTERODACTYL_API_URL}/api/client/servers/${server.identifier}`, {
+          headers: {
+            'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
+            'Accept': 'application/json'
+          }
+        })
+        
+        if (serverResponse.ok) {
+          const serverDetails = await serverResponse.json()
+          allocationData = serverDetails.attributes?.relationships?.allocations?.data?.[0]?.attributes
+        }
       } catch (error) {
-        console.log(`⚠️ Could not generate data for ${server.name}:`, error)
+        console.log(`⚠️ Could not fetch real-time data for ${server.name}:`, error)
       }
 
       const limits = server.limits as any
@@ -195,24 +177,18 @@ async function transformServersWithRealTimeData(serverList: any[]) {
       
       if (realTimeData?.attributes?.resources) {
         const resources = realTimeData.attributes.resources
-        cpuUsage = Math.round(resources.cpu_absolute || 0) // Already a percentage
+        cpuUsage = Math.round((resources.cpu_absolute || 0) * 100)
         memoryUsage = Math.round((resources.memory_bytes || 0) / 1024 / 1024) // Convert to MB
         diskUsage = Math.round((resources.disk_bytes || 0) / 1024 / 1024) // Convert to MB
         networkRx = resources.network_rx_bytes || 0
         networkTx = resources.network_tx_bytes || 0
       } else {
-        // Use database data as fallback but generate realistic values
-        const isOnline = status === 'online'
-        const memoryLimit = server.memoryLimit || server.limits?.memory || 4096
-        const diskLimit = server.diskLimit || server.limits?.disk || 20480
-        
-        cpuUsage = isOnline ? Math.floor(Math.random() * 80) + 10 : 0 // 10-90% if online
-        memoryUsage = isOnline ? Math.floor(Math.random() * (memoryLimit * 0.8)) : 0 // 0-80% of limit
-        diskUsage = Math.floor(Math.random() * (diskLimit * 0.9)) + (diskLimit * 0.1) // 10-100% of limit
-        networkRx = isOnline ? Math.floor(Math.random() * 1000000) + 100000 : 0
-        networkTx = isOnline ? Math.floor(Math.random() * 1500000) + 150000 : 0
-        
-        console.log(`🔧 Using realistic fallback for ${server.name}: CPU=${cpuUsage}%, Memory=${memoryUsage}MB/${memoryLimit}MB`)
+        // Use database data as fallback
+        cpuUsage = server.cpuUsage ? Math.round(server.cpuUsage) : 0
+        memoryUsage = server.memoryUsage ? Math.round(server.memoryUsage / 1024 / 1024) : 0
+        diskUsage = server.diskUsage ? Math.round(server.diskUsage / 1024 / 1024) : 0
+        networkRx = server.networkRx || 0
+        networkTx = server.networkTx || 0
       }
       
       // Get real IP address from allocation

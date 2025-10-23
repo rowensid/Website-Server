@@ -54,10 +54,10 @@ export default function AestheticHeader({ currentPage = 'overview' }: AestheticH
     },
     { 
       id: 'live-server', 
-      label: 'Pterodactyl Servers', 
+      label: 'Live Server', 
       icon: Activity, 
       href: '/live-server',
-      description: 'Pterodactyl server monitoring'
+      description: 'Real-time server monitoring'
     },
     { 
       id: 'manage-users', 
@@ -72,6 +72,13 @@ export default function AestheticHeader({ currentPage = 'overview' }: AestheticH
       icon: CreditCard, 
       href: '/manage-server?tab=payments',
       description: 'Payment history'
+    },
+    { 
+      id: 'pterodactyl', 
+      label: 'Pterodactyl', 
+      icon: Globe, 
+      href: '/manage-server?tab=pterodactyl',
+      description: 'Server control panel'
     }
   ]
 
