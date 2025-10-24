@@ -19,7 +19,9 @@ const publicRoutes = [
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/logout',
-  '/api/stats'
+  '/api/stats',
+  '/api/store',
+  '/api/health'
 ];
 
 // Routes that require authentication but are gateways
@@ -122,8 +124,8 @@ export async function middleware(request: NextRequest) {
       }
 
       // Check role-based access
-      if (pathname.startsWith('/owner-panel') && user.role !== 'ADMIN') {
-        // Only admin can access owner panel
+      if (pathname.startsWith('/owner-panel') && user.role !== 'OWNER' && user.role !== 'ADMIN') {
+        // Only owner and admin can access owner panel
         const errorUrl = new URL('/unauthorized', request.url);
         return NextResponse.redirect(errorUrl);
       }

@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,7 +14,6 @@ import {
   Package, 
   Settings, 
   LogOut, 
-  ArrowLeft, 
   TrendingUp,
   ShoppingCart,
   Clock,
@@ -22,10 +22,49 @@ import {
   DollarSign,
   Activity,
   Server,
-  Gamepad2
+  Gamepad2,
+  Home,
+  CreditCard,
+  History,
+  Star,
+  Heart,
+  Download,
+  Upload,
+  Shield,
+  Bell,
+  Menu,
+  X,
+  ChevronRight,
+  Zap,
+  Trophy,
+  Target,
+  Flame,
+  Sparkles,
+  Gift,
+  Crown,
+  Diamond,
+  Rocket,
+  Gauge,
+  BarChart3,
+  Wallet,
+  FileText,
+  HelpCircle,
+  MessageSquare,
+  Calendar,
+  UserCheck,
+  Cpu,
+  Database,
+  Wifi,
+  Globe,
+  Smartphone,
+  Filter,
+  Search
 } from 'lucide-react'
 import Logo from '@/components/logo'
 import ProfileDropdown from '@/components/ProfileDropdown'
+import EditProfileModal from '@/components/EditProfileModal'
+import ChangePasswordModal from '@/components/ChangePasswordModal'
+import { cn } from '@/lib/utils'
 
 interface UserData {
   id: string
@@ -76,6 +115,15 @@ export default function MemberDashboard() {
   const [storeItems, setStoreItems] = useState<StoreItem[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
   const [loadingStore, setLoadingStore] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [mounted, setMounted] = useState(false)
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token')
@@ -99,11 +147,11 @@ export default function MemberDashboard() {
   }, [router])
 
   useEffect(() => {
-    if (user) {
+    if (user && mounted) {
       fetchDashboardData()
       fetchStoreItems()
     }
-  }, [user])
+  }, [user, mounted])
 
   const fetchDashboardData = async () => {
     try {
@@ -146,12 +194,22 @@ export default function MemberDashboard() {
     router.push('/login')
   }
 
-  const handleBackToGateway = () => {
-    router.push('/gateway')
+  const handleSettings = () => {
+    setEditProfileOpen(true)
   }
 
-  const handleSettings = () => {
-    console.log('Navigate to settings')
+  const handleEditProfile = () => {
+    setEditProfileOpen(true)
+  }
+
+  const handleChangePassword = () => {
+    setChangePasswordOpen(true)
+  }
+
+  const handleUserUpdate = (updatedUser: UserData) => {
+    setUser(updatedUser)
+    // Update localStorage
+    localStorage.setItem('user_data', JSON.stringify(updatedUser))
   }
 
   const handlePurchaseItem = (item: StoreItem) => {
@@ -204,10 +262,27 @@ export default function MemberDashboard() {
     })
   }
 
-  if (loading) {
+  if (loading || !mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/50 to-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/50 to-slate-950 flex items-center justify-center relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 -left-4 w-96 h-96 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
+          <div className="absolute top-0 -right-4 w-96 h-96 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-gradient-to-r from-pink-600 to-rose-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-4000"></div>
+        </div>
+        
+        <div className="relative z-10">
+          <div className="flex flex-col items-center space-y-6">
+            <div className="w-16 h-16 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-white mb-2 bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                Loading Dashboard
+              </h2>
+              <p className="text-purple-300 text-sm animate-pulse">Preparing your workspace...</p>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -216,29 +291,183 @@ export default function MemberDashboard() {
     return null
   }
 
+  const menuItems = [
+    { 
+      id: 'overview', 
+      label: 'Overview', 
+      icon: <Home className="w-5 h-5" />, 
+      color: 'from-violet-600 to-purple-600',
+      bgColor: 'bg-violet-600/10',
+      borderColor: 'border-violet-500/30'
+    },
+    { 
+      id: 'store', 
+      label: 'Store', 
+      icon: <Store className="w-5 h-5" />, 
+      color: 'from-purple-600 to-pink-600',
+      bgColor: 'bg-purple-600/10',
+      borderColor: 'border-purple-500/30'
+    },
+    { 
+      id: 'orders', 
+      label: 'My Orders', 
+      icon: <ShoppingCart className="w-5 h-5" />, 
+      color: 'from-pink-600 to-rose-600',
+      bgColor: 'bg-pink-600/10',
+      borderColor: 'border-pink-500/30'
+    },
+    { 
+      id: 'services', 
+      label: 'Services', 
+      icon: <Server className="w-5 h-5" />, 
+      color: 'from-cyan-600 to-blue-600',
+      bgColor: 'bg-cyan-600/10',
+      borderColor: 'border-cyan-500/30'
+    },
+    { 
+      id: 'wallet', 
+      label: 'Wallet', 
+      icon: <Wallet className="w-5 h-5" />, 
+      color: 'from-emerald-600 to-teal-600',
+      bgColor: 'bg-emerald-600/10',
+      borderColor: 'border-emerald-500/30'
+    },
+    { 
+      id: 'profile', 
+      label: 'Profile', 
+      icon: <User className="w-5 h-5" />, 
+      color: 'from-amber-600 to-orange-600',
+      bgColor: 'bg-amber-600/10',
+      borderColor: 'border-amber-500/30'
+    },
+    { 
+      id: 'settings', 
+      label: 'Settings', 
+      icon: <Settings className="w-5 h-5" />, 
+      color: 'from-slate-600 to-gray-600',
+      bgColor: 'bg-slate-600/10',
+      borderColor: 'border-slate-500/30'
+    },
+  ]
+
+  const statCards = [
+    {
+      title: 'Total Orders',
+      value: stats?.totalOrders || 0,
+      change: stats?.pendingOrders || 0,
+      changeType: 'pending' as const,
+      icon: ShoppingCart,
+      color: 'from-violet-600 to-purple-600',
+      bgColor: 'bg-gradient-to-br from-violet-600/20 to-purple-600/20',
+      borderColor: 'border-violet-500/30',
+      description: `${stats?.pendingOrders || 0} pending`
+    },
+    {
+      title: 'Total Spent',
+      value: formatCurrency(stats?.totalSpent || 0),
+      change: stats?.completedOrders || 0,
+      changeType: 'completed' as const,
+      icon: DollarSign,
+      color: 'from-emerald-600 to-teal-600',
+      bgColor: 'bg-gradient-to-br from-emerald-600/20 to-teal-600/20',
+      borderColor: 'border-emerald-500/30',
+      description: `${stats?.completedOrders || 0} completed`
+    },
+    {
+      title: 'Active Services',
+      value: stats?.activeServices || 0,
+      change: 0,
+      changeType: 'neutral' as const,
+      icon: Server,
+      color: 'from-amber-600 to-orange-600',
+      bgColor: 'bg-gradient-to-br from-amber-600/20 to-orange-600/20',
+      borderColor: 'border-amber-500/30',
+      description: 'Currently running'
+    },
+    {
+      title: 'Success Rate',
+      value: `${stats?.completionRate || 0}%`,
+      change: 0,
+      changeType: 'neutral' as const,
+      icon: TrendingUp,
+      color: 'from-rose-600 to-pink-600',
+      bgColor: 'bg-gradient-to-br from-rose-600/20 to-pink-600/20',
+      borderColor: 'border-rose-500/30',
+      description: 'Completion rate'
+    }
+  ]
+
+  const quickActions = [
+    { icon: Store, label: 'Browse Store', color: 'from-purple-600 to-pink-600', action: () => setActiveTab('store') },
+    { icon: ShoppingCart, label: 'New Order', color: 'from-cyan-600 to-blue-600', action: () => setActiveTab('store') },
+    { icon: CreditCard, label: 'Top Up', color: 'from-emerald-600 to-teal-600', action: () => setActiveTab('wallet') },
+    { icon: History, label: 'View History', color: 'from-amber-600 to-orange-600', action: () => setActiveTab('orders') }
+  ]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/50 to-slate-950">
-      <header className="bg-white/5 backdrop-blur-xl border-b border-white/10 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/50 to-slate-950 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
+        <div className="absolute top-0 -right-4 w-96 h-96 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-gradient-to-r from-pink-600 to-rose-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-4000"></div>
+      </div>
+
+      {/* Grid Pattern */}
+      <div className="absolute inset-0 bg-grid-white/[0.03] bg-[size:60px_60px]"></div>
+
+      <div className="relative z-10">
+        {/* Sidebar */}
+        <div className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 bg-black/40 backdrop-blur-2xl border-r border-white/10 transform transition-transform duration-300 ease-in-out",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}>
+          <div className="flex flex-col h-full">
+            {/* Sidebar Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center space-x-3">
+                <Logo size="md" />
+                <div>
+                  <h2 className="text-lg font-bold text-white">Member Panel</h2>
+                  <p className="text-xs text-purple-300">Your Dashboard</p>
+                </div>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleBackToGateway}
-                className="text-slate-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden text-white hover:bg-white/10"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Kembali
+                <X className="w-4 h-4" />
               </Button>
-              <Logo size="sm" />
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-                  Member Dashboard
-                </h1>
-              </div>
             </div>
-            <div className="flex items-center gap-4">
+
+            {/* Navigation */}
+            <nav className="flex-1 p-4 space-y-2">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={cn(
+                    "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200",
+                    activeTab === item.id
+                      ? `${item.bgColor} ${item.borderColor} border text-white`
+                      : "text-gray-400 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center",
+                    activeTab === item.id ? `bg-gradient-to-r ${item.color}` : ""
+                  )}>
+                    {item.icon}
+                  </div>
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+
+            {/* User Section */}
+            <div className="p-4 border-t border-white/10">
               <ProfileDropdown 
                 user={user} 
                 onLogout={handleLogout}
@@ -247,423 +476,663 @@ export default function MemberDashboard() {
             </div>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        {/* Welcome Section */}
-        <div className="mb-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-4xl sm:text-5xl font-bold mb-3">
-                <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
-                  Welcome back,
-                </span>
-                <br />
-                <span className="text-white">{user.name}! 👋</span>
-              </h2>
-              <p className="text-slate-400 text-lg">
-                Manage your account and explore our premium services
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-emerald-400 text-sm font-medium">Account Active</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-violet-600/20 to-purple-600/20 backdrop-blur-xl border-violet-500/20 hover:border-violet-400/40 transition-all duration-300 hover:shadow-2xl hover:shadow-violet-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-violet-300">
-                Total Orders
-              </CardTitle>
-              <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                <ShoppingCart className="h-4 w-4 text-violet-400" />
-              </div>
-            </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="text-3xl font-bold text-white mb-1">
-                {loadingStats ? (
-                  <div className="w-12 h-8 bg-violet-500/20 rounded animate-pulse" />
-                ) : (
-                  stats?.totalOrders || 0
-                )}
-              </div>
-              <p className="text-xs text-violet-400/80">
-                {loadingStats ? 'Loading...' : `${stats?.pendingOrders || 0} pending`}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-emerald-600/20 to-green-600/20 backdrop-blur-xl border-emerald-500/20 hover:border-emerald-400/40 transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/10 to-green-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-300">
-                Total Spent
-              </CardTitle>
-              <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-emerald-400" />
-              </div>
-            </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="text-3xl font-bold text-white mb-1">
-                {loadingStats ? (
-                  <div className="w-16 h-8 bg-emerald-500/20 rounded animate-pulse" />
-                ) : (
-                  formatCurrency(stats?.totalSpent || 0)
-                )}
-              </div>
-              <p className="text-xs text-emerald-400/80">
-                {loadingStats ? 'Loading...' : `${stats?.completedOrders || 0} completed`}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-amber-600/20 to-orange-600/20 backdrop-blur-xl border-amber-500/20 hover:border-amber-400/40 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 to-orange-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-amber-300">
-                Active Services
-              </CardTitle>
-              <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                <Server className="h-4 w-4 text-amber-400" />
-              </div>
-            </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="text-3xl font-bold text-white mb-1">
-                {loadingStats ? (
-                  <div className="w-8 h-8 bg-amber-500/20 rounded animate-pulse" />
-                ) : (
-                  stats?.activeServices || 0
-                )}
-              </div>
-              <p className="text-xs text-amber-400/80">
-                {loadingStats ? 'Loading...' : 'Currently running'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-rose-600/20 to-pink-600/20 backdrop-blur-xl border-rose-500/20 hover:border-rose-400/40 transition-all duration-300 hover:shadow-2xl hover:shadow-rose-500/10">
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-600/10 to-pink-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-rose-300">
-                Success Rate
-              </CardTitle>
-              <div className="w-8 h-8 bg-rose-500/20 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-rose-400" />
-              </div>
-            </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="text-3xl font-bold text-white mb-1">
-                {loadingStats ? (
-                  <div className="w-12 h-8 bg-rose-500/20 rounded animate-pulse" />
-                ) : (
-                  `${stats?.completionRate || 0}%`
-                )}
-              </div>
-              <p className="text-xs text-rose-400/80">
-                {loadingStats ? 'Loading...' : 'Completion rate'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="overview" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-1 rounded-xl">
-            <TabsTrigger 
-              value="overview" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-purple-600 data-[state=active]:text-white text-slate-400 rounded-lg transition-all duration-200"
-            >
-              Overview
-            </TabsTrigger>
-            <TabsTrigger 
-              value="store" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-purple-600 data-[state=active]:text-white text-slate-400 rounded-lg transition-all duration-200"
-            >
-              Store
-            </TabsTrigger>
-            <TabsTrigger 
-              value="orders" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-purple-600 data-[state=active]:text-white text-slate-400 rounded-lg transition-all duration-200"
-            >
-              Orders
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-8">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-              {/* Recent Orders */}
-              <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50 hover:border-slate-600/50 transition-all duration-300">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-bold text-white flex items-center gap-3">
-                      <div className="w-10 h-10 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                        <Package className="w-5 h-5 text-violet-400" />
-                      </div>
-                      Recent Orders
-                    </CardTitle>
-                    <Badge variant="outline" className="border-slate-600 text-slate-400">
-                      Last 5 orders
-                    </Badge>
+        {/* Main Content */}
+        <div className="lg:ml-64">
+          {/* Header */}
+          <header className="bg-black/30 backdrop-blur-2xl border-b border-white/10 sticky top-0 z-40">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                {/* Left Section */}
+                <div className="flex items-center space-x-6">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="lg:hidden text-white hover:bg-white/10"
+                  >
+                    <Menu className="w-4 h-4" />
+                  </Button>
+                  <div>
+                    <h1 className="text-2xl font-bold text-white">
+                      Welcome back, <span className="bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">{user.name}</span>! 👋
+                    </h1>
+                    <p className="text-purple-300 text-sm">Manage your account and explore our premium services</p>
                   </div>
-                  <CardDescription className="text-slate-400">
-                    Your most recent purchase history
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-80 pr-4">
-                    {loadingStats ? (
-                      <div className="flex items-center justify-center h-32">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-500 border-t-transparent" />
-                          <p className="text-slate-400 text-sm">Loading orders...</p>
+                </div>
+
+                {/* Right Section */}
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-emerald-400 text-sm font-medium">Account Active</span>
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
+                    <Bell className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Content Area */}
+          <main className="p-6">
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <div className="space-y-8">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {statCards.map((stat, index) => (
+                    <Card key={index} className={`group relative overflow-hidden ${stat.bgColor} backdrop-blur-xl ${stat.borderColor} border hover:shadow-2xl transition-all duration-300`}>
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-3">
+                        <CardTitle className="text-sm font-medium text-white/80">
+                          {stat.title}
+                        </CardTitle>
+                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                          <stat.icon className="h-4 w-4 text-white" />
                         </div>
-                      </div>
-                    ) : recentOrders.length === 0 ? (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Package className="w-8 h-8 text-slate-500" />
+                      </CardHeader>
+                      <CardContent className="relative z-10">
+                        <div className="text-2xl font-bold text-white mb-1">
+                          {loadingStats ? (
+                            <div className="w-16 h-8 bg-white/20 rounded animate-pulse" />
+                          ) : (
+                            stat.value
+                          )}
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-300 mb-2">No orders yet</h3>
-                        <p className="text-slate-500 mb-6">
-                          Start by exploring our store and making your first purchase!
+                        <p className="text-xs text-white/60">
+                          {loadingStats ? 'Loading...' : stat.description}
                         </p>
-                        <Button 
-                          onClick={() => router.push('/gateway')}
-                          className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
-                        >
-                          <Store className="w-4 h-4 mr-2" />
-                          Browse Store
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {quickActions.map((action, index) => (
+                    <Button
+                      key={index}
+                      onClick={action.action}
+                      className={`h-20 bg-gradient-to-r ${action.color} hover:shadow-lg hover:shadow-${action.color.split(' ')[1]}/25 transition-all duration-300 group`}
+                    >
+                      <div className="flex flex-col items-center space-y-2">
+                        <action.icon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm font-medium">{action.label}</span>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Recent Orders & Featured Items */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Recent Orders */}
+                  <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl font-bold text-white flex items-center gap-3">
+                          <div className="w-10 h-10 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                            <Package className="w-5 h-5 text-violet-400" />
+                          </div>
+                          Recent Orders
+                        </CardTitle>
+                        <Button variant="ghost" size="sm" onClick={() => setActiveTab('orders')}>
+                          View All
+                          <ChevronRight className="w-4 h-4 ml-1" />
                         </Button>
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {recentOrders.map((order, index) => (
-                          <div 
-                            key={order.id} 
-                            className="group relative p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-violet-500/30 hover:bg-slate-800/70 transition-all duration-200"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-white mb-1 truncate">{order.title}</p>
-                                <p className="text-sm text-slate-400 mb-2">{formatDate(order.createdAt)}</p>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
-                                    {order.type}
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-80">
+                        <div className="space-y-4">
+                          {recentOrders.length > 0 ? (
+                            recentOrders.map((order) => (
+                              <div key={order.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-10 h-10 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                                    {getCategoryIcon(order.type)}
+                                  </div>
+                                  <div>
+                                    <p className="text-white font-medium">{order.title}</p>
+                                    <p className="text-slate-400 text-sm">{formatDate(order.createdAt)}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-white font-medium">{formatCurrency(order.amount)}</p>
+                                  <Badge className={getStatusColor(order.status)}>
+                                    {getStatusIcon(order.status)}
+                                    <span className="ml-1">{order.status}</span>
                                   </Badge>
                                 </div>
                               </div>
-                              <div className="flex flex-col items-end gap-2">
-                                <span className="text-lg font-bold text-violet-400">
-                                  {formatCurrency(order.amount)}
-                                </span>
-                                <Badge className={`${getStatusColor(order.status)} text-xs`}>
-                                  {getStatusIcon(order.status)}
-                                  <span className="ml-1">{order.status}</span>
-                                </Badge>
-                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-8">
+                              <Package className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+                              <p className="text-slate-400">No orders yet</p>
+                              <Button variant="outline" className="mt-4 border-violet-500/50 text-violet-300 hover:bg-violet-500/20 hover:text-violet-200 hover:border-violet-400/50 transition-all duration-200" onClick={() => setActiveTab('store')}>
+                                Browse Store
+                              </Button>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
-              <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50 hover:border-slate-600/50 transition-all duration-300">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-bold text-white flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-emerald-400" />
-                    </div>
-                    Quick Actions
-                  </CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Frequently used actions and shortcuts
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button 
-                    onClick={() => router.push('/gateway')}
-                    className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium transition-all duration-200 hover:shadow-lg hover:shadow-violet-500/25"
-                  >
-                    <Store className="w-5 h-5 mr-3" />
-                    Browse Store
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => router.push('/member-dashboard?tab=orders')}
-                    variant="outline"
-                    className="w-full h-12 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:text-white hover:border-slate-500 font-medium transition-all duration-200"
-                  >
-                    <Package className="w-5 h-5 mr-3" />
-                    View All Orders
-                  </Button>
-                  
-                  <Button 
-                    onClick={handleSettings}
-                    variant="outline"
-                    className="w-full h-12 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:text-white hover:border-slate-500 font-medium transition-all duration-200"
-                  >
-                    <Settings className="w-5 h-5 mr-3" />
-                    Account Settings
-                  </Button>
-
-                  <div className="pt-4 border-t border-slate-700/50">
-                    <div className="p-4 bg-gradient-to-r from-violet-600/10 to-purple-600/10 rounded-lg border border-violet-500/20">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                          <TrendingUp className="w-4 h-4 text-violet-400" />
+                          )}
                         </div>
-                        <h4 className="font-semibold text-white">Pro Tip</h4>
-                      </div>
-                      <p className="text-sm text-slate-300">
-                        Check out our featured items in the Store tab for exclusive deals!
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
 
-          {/* Store Tab */}
-          <TabsContent value="store" className="space-y-8">
-            <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
-              <CardHeader className="pb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-2xl font-bold text-white flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-r from-violet-600 to-purple-600 rounded-lg flex items-center justify-center">
-                        <Store className="w-6 h-6 text-white" />
+                  {/* Featured Store Items */}
+                  <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl font-bold text-white flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                            <Store className="w-5 h-5 text-purple-400" />
+                          </div>
+                          Featured Items
+                        </CardTitle>
+                        <Button variant="ghost" size="sm" onClick={() => setActiveTab('store')}>
+                          View All
+                          <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
                       </div>
-                      Featured Items
-                    </CardTitle>
-                    <CardDescription className="text-slate-400 mt-2">
-                      Premium products and services handpicked for you
-                    </CardDescription>
-                  </div>
-                  <Badge className="bg-gradient-to-r from-violet-600 to-purple-600 text-white border-none">
-                    Popular
-                  </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-80">
+                        <div className="space-y-4">
+                          {storeItems.length > 0 ? (
+                            storeItems.map((item) => (
+                              <div key={item.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                                    {getCategoryIcon(item.category)}
+                                  </div>
+                                  <div>
+                                    <p className="text-white font-medium">{item.title}</p>
+                                    <p className="text-slate-400 text-sm">{item.category}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-white font-medium">{formatCurrency(item.price)}</p>
+                                  <Button size="sm" onClick={() => handlePurchaseItem(item)} className="border-violet-500/50 text-violet-300 hover:bg-violet-500/20 hover:text-violet-200 hover:border-violet-400/50 transition-all duration-200">
+                                    Purchase
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-8">
+                              <Store className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+                              <p className="text-slate-400">No featured items</p>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {loadingStore ? (
-                  <div className="flex items-center justify-center h-32">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-500 border-t-transparent" />
-                      <p className="text-slate-400 text-sm">Loading store items...</p>
-                    </div>
+              </div>
+            )}
+
+            {/* Store Tab */}
+            {activeTab === 'store' && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-3xl font-bold text-white">Browse Store</h2>
+                  <div className="flex items-center space-x-4">
+                    <Button variant="outline" className="border-violet-500/50 text-violet-300 hover:bg-violet-500/20 hover:text-violet-200 hover:border-violet-400/50 transition-all duration-200">
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filter
+                    </Button>
+                    <Button variant="outline" className="border-violet-500/50 text-violet-300 hover:bg-violet-500/20 hover:text-violet-200 hover:border-violet-400/50 transition-all duration-200">
+                      <Search className="w-4 h-4 mr-2" />
+                      Search
+                    </Button>
                   </div>
-                ) : storeItems.length === 0 ? (
-                  <div className="text-center py-16">
-                    <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Store className="w-10 h-10 text-slate-500" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-slate-300 mb-3">No items available</h3>
-                    <p className="text-slate-500">
-                      Check back later for new products and services.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {storeItems.map((item) => (
-                      <Card 
-                        key={item.id} 
-                        className="group relative bg-slate-800/50 border-slate-700/50 hover:border-violet-500/50 hover:bg-slate-800/70 transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/10 overflow-hidden"
-                      >
-                        {item.featured && (
-                          <div className="absolute top-3 right-3 z-10">
-                            <Badge className="bg-gradient-to-r from-amber-600 to-orange-600 text-white border-none text-xs">
-                              Featured
-                            </Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {storeItems.map((item) => (
+                    <Card key={item.id} className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50 hover:border-slate-600/50 transition-all duration-300 group">
+                      <div className="aspect-video bg-gradient-to-br from-slate-700 to-slate-800 rounded-t-lg flex items-center justify-center">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover rounded-t-lg" />
+                        ) : (
+                          <div className="w-16 h-16 bg-slate-600 rounded-lg flex items-center justify-center">
+                            {getCategoryIcon(item.category)}
                           </div>
                         )}
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="w-12 h-12 bg-gradient-to-r from-violet-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                              {getCategoryIcon(item.category)}
-                            </div>
-                            <Badge variant="outline" className="border-slate-600 text-slate-400 text-xs">
-                              {item.category}
+                      </div>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className="border-violet-500/50 text-violet-300">
+                            {item.category}
+                          </Badge>
+                          {item.featured && (
+                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                              <Star className="w-3 h-3 mr-1" />
+                              Featured
                             </Badge>
+                          )}
+                        </div>
+                        <CardTitle className="text-white">{item.title}</CardTitle>
+                        <CardDescription className="text-slate-400">
+                          {item.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-2xl font-bold text-white">{formatCurrency(item.price)}</p>
                           </div>
-                          <CardTitle className="text-lg font-semibold text-white line-clamp-2 mb-2 group-hover:text-violet-300 transition-colors">
-                            {item.title}
-                          </CardTitle>
-                          <CardDescription className="text-slate-400 line-clamp-3 text-sm">
-                            {item.description}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-0 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs text-slate-500 mb-1">Price</p>
-                              <p className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-                                {formatCurrency(item.price)}
-                              </p>
-                            </div>
-                          </div>
-                          <Button 
-                            onClick={() => handlePurchaseItem(item)}
-                            className="w-full h-11 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium transition-all duration-200 hover:shadow-lg hover:shadow-violet-500/25"
-                          >
-                            <ShoppingCart className="w-4 h-4 mr-2" />
-                            Purchase Now
+                          <Button onClick={() => handlePurchaseItem(item)} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                            Purchase
                           </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          {/* Orders Tab */}
-          <TabsContent value="orders" className="space-y-8">
-            <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
-              <CardHeader className="pb-6">
-                <CardTitle className="text-2xl font-bold text-white flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-600 to-green-600 rounded-lg flex items-center justify-center">
-                    <Package className="w-6 h-6 text-white" />
-                  </div>
-                  Order History
-                </CardTitle>
-                <CardDescription className="text-slate-400">
-                  Complete history of all your orders and purchases
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-16">
-                  <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Package className="w-10 h-10 text-slate-500" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-slate-300 mb-3">Feature Coming Soon</h3>
-                  <p className="text-slate-500 mb-6 max-w-md mx-auto">
-                    Detailed order history and management will be available in the next update.
-                  </p>
-                  <Button 
-                    onClick={() => router.push('/gateway')}
-                    className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
-                  >
-                    <Store className="w-4 h-4 mr-2" />
-                    Back to Store
+            {/* Orders Tab */}
+            {activeTab === 'orders' && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-3xl font-bold text-white">My Orders</h2>
+                  <Button onClick={() => setActiveTab('store')} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    New Order
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
+
+                <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      {recentOrders.length > 0 ? (
+                        recentOrders.map((order) => (
+                          <div key={order.id} className="flex items-center justify-between p-6 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-12 h-12 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                                {getCategoryIcon(order.type)}
+                              </div>
+                              <div>
+                                <p className="text-white font-medium text-lg">{order.title}</p>
+                                <p className="text-slate-400">{formatDate(order.createdAt)}</p>
+                                <p className="text-slate-500 text-sm">Payment: {order.paymentMethod}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-white font-medium text-lg">{formatCurrency(order.amount)}</p>
+                              <Badge className={getStatusColor(order.status)}>
+                                {getStatusIcon(order.status)}
+                                <span className="ml-1">{order.status}</span>
+                              </Badge>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-12">
+                          <ShoppingCart className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+                          <p className="text-slate-400 text-lg mb-4">No orders yet</p>
+                          <Button onClick={() => setActiveTab('store')} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                            Browse Store
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Services Tab */}
+            {activeTab === 'services' && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-3xl font-bold text-white">My Services</h2>
+                  <Button onClick={() => setActiveTab('store')} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                    <Server className="w-4 h-4 mr-2" />
+                    Add Service
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <Card className="bg-gradient-to-br from-violet-600/20 to-purple-600/20 backdrop-blur-xl border-violet-500/30">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-white">Minecraft Server</CardTitle>
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Active
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">IP Address:</span>
+                          <span className="text-white">192.168.1.100</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Port:</span>
+                          <span className="text-white">25565</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">RAM:</span>
+                          <span className="text-white">2GB</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Status:</span>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-emerald-400">Online</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-cyan-600/20 to-blue-600/20 backdrop-blur-xl border-cyan-500/30">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-white">FiveM Development</CardTitle>
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Active
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">IP Address:</span>
+                          <span className="text-white">192.168.1.101</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Port:</span>
+                          <span className="text-white">30120</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">RAM:</span>
+                          <span className="text-white">4GB</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Status:</span>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-emerald-400">Online</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-amber-600/20 to-orange-600/20 backdrop-blur-xl border-amber-500/30">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-white">Windows RDP</CardTitle>
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Active
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">IP Address:</span>
+                          <span className="text-white">192.168.1.102</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Port:</span>
+                          <span className="text-white">3389</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">RAM:</span>
+                          <span className="text-white">4GB</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Status:</span>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-emerald-400">Online</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Wallet Tab */}
+            {activeTab === 'wallet' && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-3xl font-bold text-white">My Wallet</h2>
+                  <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Top Up
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <Card className="bg-gradient-to-br from-emerald-600/20 to-teal-600/20 backdrop-blur-xl border-emerald-500/30 lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-white">Wallet Balance</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center py-8">
+                        <p className="text-6xl font-bold text-white mb-2">Rp 0</p>
+                        <p className="text-emerald-400">Available Balance</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                    <CardHeader>
+                      <CardTitle className="text-white">Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Top Up
+                      </Button>
+                      <Button variant="outline" className="w-full border-violet-500/50 text-violet-300 hover:bg-violet-500/20 hover:text-violet-200 hover:border-violet-400/50 transition-all duration-200">
+                        <History className="w-4 h-4 mr-2" />
+                        Transaction History
+                      </Button>
+                      <Button variant="outline" className="w-full border-violet-500/50 text-violet-300 hover:bg-violet-500/20 hover:text-violet-200 hover:border-violet-400/50 transition-all duration-200">
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Statement
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Recent Transactions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <Wallet className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+                      <p className="text-slate-400 text-lg">No transactions yet</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Profile Tab */}
+            {activeTab === 'profile' && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-3xl font-bold text-white">My Profile</h2>
+                  <Button onClick={handleEditProfile} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                    <CardHeader>
+                      <CardTitle className="text-white">Profile Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full p-1">
+                          <div className="w-full h-full rounded-full overflow-hidden bg-slate-800 flex items-center justify-center">
+                            {user.avatar ? (
+                              <img 
+                                src={user.avatar} 
+                                alt="Profile" 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <User className="w-8 h-8 text-white" />
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-white font-medium text-lg">{user.name}</p>
+                          <p className="text-slate-400">{user.email}</p>
+                          <Badge className="bg-violet-500/20 text-violet-400 border-violet-500/30">
+                            {user.role}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                    <CardHeader>
+                      <CardTitle className="text-white">Account Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Member Since:</span>
+                        <span className="text-white">{formatDate(user.createdAt)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Account Status:</span>
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Active
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Last Updated:</span>
+                        <span className="text-white">{formatDate(user.updatedAt)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                    <CardHeader>
+                      <CardTitle className="text-white">Security</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Button onClick={handleChangePassword} className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+                        <Shield className="w-4 h-4 mr-2" />
+                        Change Password
+                      </Button>
+                      <Button className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700">
+                        <Smartphone className="w-4 h-4 mr-2" />
+                        Two-Factor Auth
+                      </Button>
+                      <Button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
+                        <Bell className="w-4 h-4 mr-2" />
+                        Notifications
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Settings Tab */}
+            {activeTab === 'settings' && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-3xl font-bold text-white">Settings</h2>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                    <CardHeader>
+                      <CardTitle className="text-white">General Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Language</span>
+                        <select className="bg-slate-700 text-white rounded px-3 py-1">
+                          <option>English</option>
+                          <option>Bahasa Indonesia</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Timezone</span>
+                        <select className="bg-slate-700 text-white rounded px-3 py-1">
+                          <option>UTC+7 (WIB)</option>
+                          <option>UTC+8 (WITA)</option>
+                          <option>UTC+9 (WIT)</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Currency</span>
+                        <select className="bg-slate-700 text-white rounded px-3 py-1">
+                          <option>IDR</option>
+                          <option>USD</option>
+                        </select>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-slate-800/30 backdrop-blur-xl border-slate-700/50">
+                    <CardHeader>
+                      <CardTitle className="text-white">Notification Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Email Notifications</span>
+                        <input type="checkbox" className="rounded" defaultChecked />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Push Notifications</span>
+                        <input type="checkbox" className="rounded" defaultChecked />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">SMS Notifications</span>
+                        <input type="checkbox" className="rounded" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {user && (
+        <>
+          <EditProfileModal
+            user={user}
+            isOpen={editProfileOpen}
+            onClose={() => setEditProfileOpen(false)}
+            onUpdate={handleUserUpdate}
+          />
+          <ChangePasswordModal
+            isOpen={changePasswordOpen}
+            onClose={() => setChangePasswordOpen(false)}
+          />
+        </>
+      )}
     </div>
   )
 }

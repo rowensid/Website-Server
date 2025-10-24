@@ -18,11 +18,14 @@ model User {
   lastLoginAt  DateTime?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
+  balance      Float               @default(0)
   orders       Order[]
   pteroServers PterodactylServer[]
   services     Service[]
   sessions     Session[]
   loginHistory LoginHistory[]
+  invoices     Invoice[]
+  transactions WalletTransaction[]
 }
 
 model Session {
@@ -63,6 +66,7 @@ model Order {
   updatedAt     DateTime    @updatedAt
   service       Service?    @relation(fields: [serviceId], references: [id])
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices      Invoice[]
 }
 
 model PterodactylServer {
@@ -142,6 +146,36 @@ model StoreItem {
   updatedAt   DateTime    @updatedAt
 }
 
+model Invoice {
+  id            String         @id @default(cuid())
+  invoiceNumber String         @unique
+  userId        String
+  orderId       String?
+  title         String
+  description   String?
+  amount        Float
+  status        InvoiceStatus  @default(PENDING)
+  dueDate       DateTime
+  paidAt        DateTime?
+  paymentMethod String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order         Order?         @relation(fields: [orderId], references: [id])
+}
+
+model WalletTransaction {
+  id          String               @id @default(cuid())
+  userId      String
+  type        TransactionType
+  amount      Float
+  description String?
+  balance     Float               // Balance after transaction
+  metadata    Json?               // Additional data like invoiceId, paymentMethod, etc.
+  createdAt   DateTime            @default(now())
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 enum Role {
   USER
   ADMIN
@@ -167,6 +201,22 @@ enum OrderStatus {
   COMPLETED
   CANCELLED
   REFUNDED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum TransactionType {
+  TOP_UP
+  PAYMENT
+  REFUND
+  BONUS
+  PENALTY
 }
 
 enum StoreCategory {
