@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Monitor, Server, Code, Gamepad2, Users, Zap, Shield, Globe, ChevronRight, Menu, X, TrendingUp, Activity, Clock, Star, Cpu, Database, Cloud, Lock } from 'lucide-react'
 import Link from 'next/link'
 import Logo from '@/components/logo'
+import Head from 'next/head'
 
 interface StatsData {
   totalUsers: number
@@ -124,7 +125,23 @@ export default function Home() {
   ]
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
+    <>
+      <Head>
+        <title>A&S Studio Project - Creative Studio & Premium Hosting Services</title>
+        <meta name="description" content="Creative studio & premium hosting services untuk kebutuhan digital anda. Game hosting premium, RDP berkualitas, dan jasa development profesional dengan sentuhan artistik yang unik." />
+        <meta name="keywords" content="A&S Studio, Game Hosting, RDP Premium, Development Services, FiveM, Roblox, Creative Studio, Premium Hosting" />
+        <meta property="og:title" content="A&S Studio Project - Creative Studio & Premium Hosting Services" />
+        <meta property="og:description" content="Solusi kreatif untuk kebutuhan digital anda. Game hosting premium, RDP berkualitas, dan jasa development profesional." />
+        <meta property="og:image" content="/logo-as-studio.png" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="A&S Studio Project - Creative Studio & Premium Hosting Services" />
+        <meta name="twitter:description" content="Solusi kreatif untuk kebutuhan digital anda. Game hosting premium, RDP berkualitas, dan jasa development profesional." />
+        <meta name="twitter:image" content="/logo-as-studio.png" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
+      </Head>
+      <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* Navigation */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-black/90 backdrop-blur-lg border-b border-white/10' : ''}`}>
         <div className="container mx-auto px-4 py-4">
@@ -549,6 +566,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   )
 }

@@ -155,13 +155,20 @@ export default function EditProfileModal({ user, isOpen, onClose, onUpdate }: Ed
         return
       }
 
+      // For regular users, only send name and avatar
+      // Don't include email in the request
+      const submitData = {
+        name: formData.name,
+        avatar: formData.avatar || null
+      }
+
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       })
 
       const data = await response.json()
@@ -172,7 +179,15 @@ export default function EditProfileModal({ user, isOpen, onClose, onUpdate }: Ed
         onUpdate(data.user)
         onClose()
       } else {
-        setErrors({ submit: data.error || 'Failed to update profile' })
+        // Handle specific error messages
+        if (data.error === 'Email changes are not allowed. Please contact admin.') {
+          setErrors({ 
+            email: data.error,
+            submit: 'Email changes are not allowed. Please contact admin.' 
+          })
+        } else {
+          setErrors({ submit: data.error || 'Failed to update profile' })
+        }
       }
     } catch (error) {
       console.error('Update error:', error)
@@ -324,7 +339,10 @@ export default function EditProfileModal({ user, isOpen, onClose, onUpdate }: Ed
                     type="email"
                     value={formData.email}
                     disabled
-                    className="bg-slate-800/30 border-slate-700/50 text-slate-400 placeholder:text-slate-600 cursor-not-allowed"
+                    className={cn(
+                      "bg-slate-800/30 border-slate-700/50 text-slate-400 placeholder:text-slate-600 cursor-not-allowed",
+                      errors.email && "border-red-500/50 focus:ring-red-500/20"
+                    )}
                     placeholder="Email (read-only)"
                   />
                   <p className="text-xs text-slate-500">

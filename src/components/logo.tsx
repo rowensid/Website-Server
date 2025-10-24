@@ -25,10 +25,10 @@ export default function Logo({ size = 'md', showText = true, className = '' }: L
 
   return (
     <div className={`flex items-center space-x-2 ${className}`}>
-      {/* Logo A&S Studio Project - Using regular img tag to avoid Next.js Image config issues */}
+      {/* Logo A&S Studio Project */}
       <div className={`${sizeClasses[size]} relative rounded-lg overflow-hidden shadow-lg shadow-purple-500/25`}>
         <img
-          src="https://z-cdn-media.chatglm.cn/files/d66918b7-d857-404c-b906-106aeb7314bc_pasted_image_1761064872435.png?auth_key=1792601023-dd799744fc324e6cba1e7bfd4baf99d2-0-3bda3d0790fb9ac3bc437e366085ffc7"
+          src="/logo-as-studio.png"
           alt="A&S Studio Project Logo"
           className="w-full h-full object-cover"
         />
