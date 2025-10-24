@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Monitor, Server, Code, Gamepad2, Users, Zap, Shield, Globe, ChevronRight, Menu, X, TrendingUp, Activity, Clock, Star } from 'lucide-react'
+import { Monitor, Server, Code, Gamepad2, Users, Zap, Shield, Globe, ChevronRight, Menu, X, TrendingUp, Activity, Clock, Star, Cpu, Database, Cloud, Lock } from 'lucide-react'
 import Link from 'next/link'
 import Logo from '@/components/logo'
-
 
 interface StatsData {
   totalUsers: number
@@ -49,7 +48,6 @@ export default function Home() {
     }
 
     fetchStats()
-    // Refresh stats every 30 seconds
     const interval = setInterval(fetchStats, 30000)
     return () => clearInterval(interval)
   }, [])
@@ -60,21 +58,24 @@ export default function Home() {
       title: "Game Hosting",
       description: "Server game hosting dengan performa tinggi dan latency rendah untuk pengalaman gaming terbaik",
       features: ["99.9% Uptime", "DDoS Protection", "Auto Backup", "24/7 Support"],
-      gradient: "from-pink-500 to-purple-600"
+      gradient: "from-pink-500 to-purple-600",
+      pricing: "Mulai dari Rp 50K/bulan"
     },
     {
       icon: <Monitor className="w-8 h-8" />,
       title: "RDP Premium",
       description: "Remote Desktop Protocol dengan spesifikasi tinggi untuk kebutuhan computing anda",
       features: ["High Performance", "Full Admin Access", "Unlimited Bandwidth", "Windows Server"],
-      gradient: "from-purple-600 to-blue-600"
+      gradient: "from-purple-600 to-blue-600",
+      pricing: "Mulai dari Rp 75K/bulan"
     },
     {
       icon: <Code className="w-8 h-8" />,
       title: "Development Services",
       description: "Jasa development khusus untuk FiveM dan Roblox dengan tim profesional",
       features: ["Custom Scripts", "UI/UX Design", "Database Setup", "Optimization"],
-      gradient: "from-blue-600 to-pink-500"
+      gradient: "from-blue-600 to-pink-500",
+      pricing: "Mulai dari Rp 500K/project"
     }
   ]
 
@@ -87,15 +88,38 @@ export default function Home() {
     },
     {
       name: "Amerta Roleplay",
-      role: "Game Server",
+      role: "Game Server Owner",
       content: "Layanan hosting terbaik yang pernah kami gunakan. Server selalu stabil dan support sangat responsif untuk komunitas gaming kami!",
       rating: 5
     },
     {
       name: "Mylo",
-      role: "Customer Dev",
+      role: "Content Creator",
       content: "RDP premium dengan performa luar biasa. Server development kami jadi lancar tanpa lag sama sekali. Best service ever!",
       rating: 5
+    }
+  ]
+
+  const features = [
+    {
+      icon: <Cpu className="w-6 h-6" />,
+      title: "High Performance",
+      description: "Server dengan spesifikasi tinggi dan teknologi terkini"
+    },
+    {
+      icon: <Shield className="w-6 h-6" />,
+      title: "Keamanan Terjamin",
+      description: "Perlindungan DDoS dan enkripsi data terstandar"
+    },
+    {
+      icon: <Cloud className="w-6 h-6" />,
+      title: "Cloud Technology",
+      description: "Infrastruktur cloud yang scalable dan reliable"
+    },
+    {
+      icon: <Lock className="w-6 h-6" />,
+      title: "Data Privacy",
+      description: "Keamanan data privasi terjamin dengan enkripsi"
     }
   ]
 
@@ -109,6 +133,7 @@ export default function Home() {
             
             <div className="hidden md:flex items-center space-x-8">
               <Link href="#services" className="hover:text-pink-400 transition-colors">Layanan</Link>
+              <Link href="#features" className="hover:text-pink-400 transition-colors">Fitur</Link>
               <Link href="#stats" className="hover:text-pink-400 transition-colors">Statistik</Link>
               <Link href="#testimonials" className="hover:text-pink-400 transition-colors">Testimoni</Link>
               <Link href="/login">
@@ -137,6 +162,7 @@ export default function Home() {
           <div className="md:hidden bg-black/95 backdrop-blur-lg border-t border-white/10">
             <div className="container mx-auto px-4 py-4 space-y-4">
               <Link href="#services" className="block hover:text-pink-400 transition-colors">Layanan</Link>
+              <Link href="#features" className="block hover:text-pink-400 transition-colors">Fitur</Link>
               <Link href="#stats" className="block hover:text-pink-400 transition-colors">Statistik</Link>
               <Link href="#testimonials" className="block hover:text-pink-400 transition-colors">Testimoni</Link>
               <Link href="/login" className="block">
@@ -158,12 +184,12 @@ export default function Home() {
       <section className="relative min-h-screen flex items-center justify-center px-4 pt-20">
         <div className="absolute inset-0 bg-gradient-to-br from-pink-900/20 via-purple-900/20 to-blue-900/20" />
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-500" />
         </div>
         
-        <div className="relative z-10 text-center max-w-5xl mx-auto">
+        <div className="relative z-10 text-center max-w-6xl mx-auto">
           <Badge className="mb-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-none">
             <Zap className="w-4 h-4 mr-2" />
             Creative Studio & Premium Hosting Services
@@ -181,12 +207,26 @@ export default function Home() {
             <span className="text-white">& Development Solutions</span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-4xl mx-auto">
             Solusi kreatif untuk kebutuhan digital anda. Game hosting premium, RDP berkualitas, dan jasa development profesional dengan sentuhan artistik yang unik.
           </p>
           
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+            <Link href="/register">
+              <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-lg px-8 py-3">
+                Mulai Sekarang
+                <ChevronRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+            <Link href="#services">
+              <Button size="lg" variant="outline" className="border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-white text-lg px-8 py-3">
+                Lihat Layanan
+              </Button>
+            </Link>
+          </div>
+          
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i} className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
@@ -199,28 +239,28 @@ export default function Home() {
               ))
             ) : (
               <>
-                <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
+                <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-pink-500/50 transition-all duration-300">
                   <CardContent className="p-6 text-center">
                     <Users className="w-8 h-8 text-pink-500 mx-auto mb-2" />
                     <div className="text-2xl font-bold text-white">{stats?.totalUsers || 0}</div>
                     <div className="text-sm text-gray-400">Klien Aktif</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
+                <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-purple-500/50 transition-all duration-300">
                   <CardContent className="p-6 text-center">
                     <Server className="w-8 h-8 text-purple-500 mx-auto mb-2" />
                     <div className="text-2xl font-bold text-white">{stats?.totalServices || 0}</div>
                     <div className="text-sm text-gray-400">Server Aktif</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
+                <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-blue-500/50 transition-all duration-300">
                   <CardContent className="p-6 text-center">
                     <Activity className="w-8 h-8 text-blue-500 mx-auto mb-2" />
                     <div className="text-2xl font-bold text-white">{stats?.uptime || '99.9%'}</div>
                     <div className="text-sm text-gray-400">Uptime</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
+                <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-green-500/50 transition-all duration-300">
                   <CardContent className="p-6 text-center">
                     <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
                     <div className="text-2xl font-bold text-white">
@@ -235,95 +275,35 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Detailed Stats Section */}
-      <section id="stats" className="py-20 px-4 bg-gradient-to-b from-black to-gray-900/50">
+      {/* Features Section */}
+      <section id="features" className="py-20 px-4 bg-gradient-to-b from-black to-gray-900/50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-                Statistik Real-Time
+                Mengapa Memilih Kami
               </span>
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Pantau performa layanan kami secara real-time
+              Kami menyediakan solusi terbaik dengan teknologi terkini dan support profesional
             </p>
           </div>
           
-          {loading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
-                  <CardContent className="p-6">
-                    <div className="w-full h-20 bg-gray-700 rounded animate-pulse mb-4" />
-                    <div className="w-3/4 h-4 bg-gray-700 rounded animate-pulse mb-2" />
-                    <div className="w-1/2 h-3 bg-gray-700 rounded animate-pulse" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-pink-500/50 transition-all duration-300 group">
                 <CardHeader>
-                  <CardTitle className="text-lg text-white flex items-center">
-                    <Users className="w-5 h-5 mr-2 text-pink-500" />
-                    Total Klien
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-white mb-2">{stats?.totalUsers || 0}</div>
-                  <div className="text-sm text-green-400 flex items-center">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    +{stats?.recentUsers || 0} minggu ini
+                  <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    {feature.icon}
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
-                <CardHeader>
-                  <CardTitle className="text-lg text-white flex items-center">
-                    <Server className="w-5 h-5 mr-2 text-purple-500" />
-                    Server Aktif
-                  </CardTitle>
+                  <CardTitle className="text-xl text-white">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-white mb-2">{stats?.totalServices || 0}</div>
-                  <div className="text-sm text-green-400 flex items-center">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    +{stats?.recentServices || 0} minggu ini
-                  </div>
+                  <p className="text-gray-300">{feature.description}</p>
                 </CardContent>
               </Card>
-
-              <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
-                <CardHeader>
-                  <CardTitle className="text-lg text-white flex items-center">
-                    <Activity className="w-5 h-5 mr-2 text-blue-500" />
-                    Total Pesanan
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-white mb-2">{stats?.totalOrders || 0}</div>
-                  <div className="text-sm text-gray-400">Selesai diproses</div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
-                <CardHeader>
-                  <CardTitle className="text-lg text-white flex items-center">
-                    <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
-                    Total Revenue
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-white mb-2">
-                    Rp {((stats?.totalRevenue || 0) / 1000000).toFixed(1)}M
-                  </div>
-                  <div className="text-sm text-gray-400">Terakumulasi</div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </section>
 
@@ -354,17 +334,20 @@ export default function Home() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2">
+                  <div className="space-y-3">
                     {service.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center text-gray-300">
-                        <ChevronRight className="w-4 h-4 mr-2 text-pink-500" />
+                      <div key={idx} className="flex items-center text-sm text-gray-300">
+                        <div className="w-2 h-2 bg-pink-500 rounded-full mr-2" />
                         {feature}
-                      </li>
+                      </div>
                     ))}
-                  </ul>
-                  <Button className={`w-full mt-6 bg-gradient-to-r ${service.gradient} hover:opacity-90 transition-opacity`}>
-                    Pesan Sekarang
-                  </Button>
+                    <div className="pt-4 border-t border-gray-700">
+                      <p className="text-pink-400 font-semibold">{service.pricing}</p>
+                    </div>
+                    <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+                      Pilih Layanan
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -372,44 +355,156 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 px-4 bg-gradient-to-b from-black to-gray-900/50">
+      {/* Stats Section */}
+      <section id="stats" className="py-20 px-4 bg-gradient-to-b from-black to-gray-900/50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Apa Kata Klien
+              <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                Statistik Real-Time
               </span>
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Testimoni dari klien yang puas dengan layanan kami
+              Pantau performa layanan kami secara real-time
+            </p>
+          </div>
+          
+          {loading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
+                  <CardContent className="p-6">
+                    <div className="w-full h-20 bg-gray-700 rounded animate-pulse mb-4" />
+                    <div className="w-3/4 h-4 bg-gray-700 rounded animate-pulse mb-2" />
+                    <div className="w-1/2 h-3 bg-gray-700 rounded animate-pulse" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-pink-500/50 transition-all duration-300">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-pink-500" />
+                    Total Klien
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-white mb-2">{stats?.totalUsers || 0}</div>
+                  <div className="text-sm text-green-400 flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-1" />
+                    +{stats?.recentUsers || 0} minggu ini
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-purple-500/50 transition-all duration-300">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white flex items-center">
+                    <Server className="w-5 h-5 mr-2 text-purple-500" />
+                    Server Aktif
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-white mb-2">{stats?.totalServices || 0}</div>
+                  <div className="text-sm text-green-400 flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-1" />
+                    +{stats?.recentServices || 0} minggu ini
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-blue-500/50 transition-all duration-300">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white flex items-center">
+                    <Activity className="w-5 h-5 mr-2 text-blue-500" />
+                    Total Pesanan
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-white mb-2">{stats?.totalOrders || 0}</div>
+                  <div className="text-sm text-gray-400">Selesai diproses</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-green-500/50 transition-all duration-300">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white flex items-center">
+                    <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
+                    Total Revenue
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-white mb-2">
+                    Rp {((stats?.totalRevenue || 0) / 1000000).toFixed(1)}M
+                  </div>
+                  <div className="text-sm text-gray-400">Terakumulasi</div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section id="testimonials" className="py-20 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                Testimoni Klien
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Apa yang klien katakan tentang layanan kami
             </p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-pink-500/50 transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex mb-4">
-                    {Array.from({ length: testimonial.rating }).map((_, i) => (
+                <CardHeader>
+                  <div className="flex items-center mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
                       <Star key={i} className="w-5 h-5 text-yellow-500 fill-current" />
                     ))}
                   </div>
-                  <p className="text-gray-300 mb-6 italic">
-                    "{testimonial.content}"
-                  </p>
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold mr-4">
-                      {testimonial.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-white">{testimonial.name}</div>
-                      <div className="text-sm text-gray-400">{testimonial.role}</div>
-                    </div>
-                  </div>
+                  <CardTitle className="text-xl text-white">{testimonial.name}</CardTitle>
+                  <CardDescription className="text-gray-400">{testimonial.role}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-300 italic">"{testimonial.content}"</p>
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 bg-gradient-to-r from-pink-900/20 to-purple-900/20">
+        <div className="container mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+              Siap Memulai Proyek Anda?
+            </span>
+          </h2>
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            Bergabunglah dengan ratusan klien yang sudah percaya pada layanan kami
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/register">
+              <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-lg px-8 py-3">
+                Daftar Sekarang
+                <ChevronRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button size="lg" variant="outline" className="border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-white text-lg px-8 py-3">
+                Login
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -419,43 +514,36 @@ export default function Home() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <Logo size="md" className="mb-4" />
-              <p className="text-gray-400">
-                Creative studio dengan solusi premium untuk game hosting, development services, dan kebutuhan digital anda.
+              <Logo size="md" showText={true} />
+              <p className="text-gray-400 mt-4">
+                Creative studio & premium hosting services untuk kebutuhan digital anda.
               </p>
             </div>
-            
             <div>
-              <h4 className="font-semibold mb-4">Layanan</h4>
+              <h3 className="text-lg font-semibold text-white mb-4">Layanan</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="#" className="hover:text-pink-400">Game Hosting</Link></li>
-                <li><Link href="#" className="hover:text-pink-400">RDP Premium</Link></li>
-                <li><Link href="#" className="hover:text-pink-400">FiveM Development</Link></li>
-                <li><Link href="#" className="hover:text-pink-400">Roblox Development</Link></li>
+                <li><Link href="#services" className="hover:text-pink-400 transition-colors">Game Hosting</Link></li>
+                <li><Link href="#services" className="hover:text-pink-400 transition-colors">RDP Premium</Link></li>
+                <li><Link href="#services" className="hover:text-pink-400 transition-colors">Development</Link></li>
               </ul>
             </div>
-            
             <div>
-              <h4 className="font-semibold mb-4">Perusahaan</h4>
+              <h3 className="text-lg font-semibold text-white mb-4">Perusahaan</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="#" className="hover:text-pink-400">Tentang Kami</Link></li>
-                <li><Link href="#" className="hover:text-pink-400">Kontak</Link></li>
-                <li><Link href="#" className="hover:text-pink-400">Blog</Link></li>
-                <li><Link href="#" className="hover:text-pink-400">Karir</Link></li>
+                <li><Link href="#about" className="hover:text-pink-400 transition-colors">Tentang Kami</Link></li>
+                <li><Link href="#contact" className="hover:text-pink-400 transition-colors">Kontak</Link></li>
+                <li><Link href="#blog" className="hover:text-pink-400 transition-colors">Blog</Link></li>
               </ul>
             </div>
-            
             <div>
-              <h4 className="font-semibold mb-4">Support</h4>
+              <h3 className="text-lg font-semibold text-white mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="#" className="hover:text-pink-400">Help Center</Link></li>
-                <li><Link href="#" className="hover:text-pink-400">Terms of Service</Link></li>
-                <li><Link href="#" className="hover:text-pink-400">Privacy Policy</Link></li>
-                <li><Link href="#" className="hover:text-pink-400">Status</Link></li>
+                <li><Link href="/login" className="hover:text-pink-400 transition-colors">Login</Link></li>
+                <li><Link href="/register" className="hover:text-pink-400 transition-colors">Daftar</Link></li>
+                <li><Link href="#help" className="hover:text-pink-400 transition-colors">Bantuan</Link></li>
               </ul>
             </div>
           </div>
-          
           <div className="border-t border-white/10 mt-8 pt-8 text-center text-gray-400">
             <p>&copy; 2024 A&S Studio Project. All rights reserved.</p>
           </div>

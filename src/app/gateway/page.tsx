@@ -1,236 +1,212 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Crown, User, Users, Server, ShoppingBag, Database, LogOut, ChevronRight } from 'lucide-react'
+import { Crown, User, ArrowRight, Shield, Store, Users, Settings } from 'lucide-react'
 import Logo from '@/components/logo'
+import ProfileDropdown from '@/components/ProfileDropdown'
+
+interface UserData {
+  id: string
+  name: string
+  email: string
+  role: string
+  avatar?: string
+  createdAt: string
+  updatedAt: string
+}
 
 export default function GatewayPage() {
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const [user, setUser] = useState<UserData | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    checkAuth()
-  }, [])
+    // Check if user is logged in
+    const token = localStorage.getItem('auth_token')
+    const userData = localStorage.getItem('user_data')
+    
+    if (!token || !userData) {
+      router.push('/login')
+      return
+    }
 
-  const checkAuth = async () => {
     try {
-      console.log('Gateway - Checking auth...')
-      const response = await fetch('/api/auth/me')
-      console.log('Gateway - Auth response status:', response.status)
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Gateway - User data:', data.user) // Debug log
-        setUser(data.user)
-      } else {
-        console.log('Gateway - Auth failed, redirecting to login')
-        router.push('/login')
-      }
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
     } catch (error) {
-      console.error('Gateway - Auth error:', error)
+      console.error('Failed to parse user data:', error)
       router.push('/login')
     } finally {
       setLoading(false)
     }
+  }, [router])
+
+  const handleSelectDashboard = (type: 'owner' | 'member') => {
+    if (type === 'owner') {
+      router.push('/owner-panel')
+    } else {
+      router.push('/member-dashboard')
+    }
   }
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout')
-      router.push('/login')
-    } catch (error) {
-      console.error('Logout error:', error)
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user_data')
+    router.push('/login')
+  }
+
+  const handleSettings = () => {
+    // TODO: Navigate to settings page
+    console.log('Navigate to settings')
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-pink-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
       </div>
     )
   }
 
   if (!user) {
-    return null
+    return null // Will redirect to login
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Navigation */}
-      <nav className="border-b border-white/10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Logo size="md" />
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div className="text-sm text-gray-300">Welcome back,</div>
-                <div className="font-semibold">{user.name}</div>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-pink-950 flex items-center justify-center relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
+        <div className="absolute top-0 -right-4 w-96 h-96 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-gradient-to-r from-pink-600 to-rose-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-4000"></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-4xl mx-auto p-4">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex-1"></div>
+            <Logo size="xl" />
+            <div className="flex-1 flex justify-end">
+              <ProfileDropdown 
+                user={user} 
+                onLogout={handleLogout}
+                onSettings={handleSettings}
+              />
             </div>
           </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-              Choose Your Dashboard
-            </span>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            Selamat Datang Kembali!
           </h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-4">
-            Select the dashboard you want to access based on your needs
+          <p className="text-purple-300 text-lg">
+            {user.name} • {user.email}
           </p>
-          <div className="flex justify-center">
-            <Badge className={(user.role === 'ADMIN' || user.role === 'OWNER') ? 'bg-purple-500' : 'bg-blue-500'} variant="secondary">
-              {(user.role === 'ADMIN' || user.role === 'OWNER') ? '👑 Administrator Access' : '👤 Member Access'}
-            </Badge>
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <Shield className="w-4 h-4 text-green-400" />
+            <span className="text-green-400 text-sm font-medium">
+              {user.role === 'OWNER' ? 'Owner Access' : 'Member Access'}
+            </span>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          
-          {/* Member Dashboard */}
-          <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-pink-500/50 transition-all duration-300 group">
-            <CardHeader>
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <User className="w-6 h-6" />
+        {/* Dashboard Selection */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Owner Panel Card */}
+          <Card className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 backdrop-blur-2xl border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 group cursor-pointer"
+                onClick={() => handleSelectDashboard('owner')}>
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <Crown className="w-8 h-8 text-white" />
                 </div>
-                <Badge variant="outline" className="border-blue-500 text-blue-400">
-                  Member
-                </Badge>
               </div>
-              <CardTitle className="text-2xl text-white">Member Dashboard</CardTitle>
-              <CardDescription className="text-gray-300">
-                Manage your personal services, orders, and account settings
+              <CardTitle className="text-2xl font-bold text-white mb-2">
+                Owner Panel
+              </CardTitle>
+              <CardDescription className="text-purple-300">
+                Kelola seluruh sistem, pengguna, dan konfigurasi platform
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-center">
               <div className="space-y-3 mb-6">
-                <div className="flex items-center text-gray-300">
-                  <Server className="w-4 h-4 mr-3 text-blue-500" />
-                  <span className="text-sm">View your active services</span>
+                <div className="flex items-center justify-center gap-2 text-purple-200">
+                  <Settings className="w-4 h-4" />
+                  <span className="text-sm">System Configuration</span>
                 </div>
-                <div className="flex items-center text-gray-300">
-                  <ShoppingBag className="w-4 h-4 mr-3 text-blue-500" />
-                  <span className="text-sm">Track your orders</span>
+                <div className="flex items-center justify-center gap-2 text-purple-200">
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm">User Management</span>
                 </div>
-                <div className="flex items-center text-gray-300">
-                  <Users className="w-4 h-4 mr-3 text-blue-500" />
-                  <span className="text-sm">Account settings</span>
+                <div className="flex items-center justify-center gap-2 text-purple-200">
+                  <Store className="w-4 h-4" />
+                  <span className="text-sm">Store Management</span>
                 </div>
               </div>
-              <Link href="/member-dashboard">
-                <Button className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600">
-                  Open Member Dashboard
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
+              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25 transition-all duration-200 hover:shadow-purple-500/40 group-hover:scale-105">
+                Buka Owner Panel
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </CardContent>
           </Card>
 
-          {/* Owner Dashboard - Only for Admins */}
-          {(user.role === 'ADMIN' || user.role === 'OWNER') && (
-            <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg hover:border-purple-500/50 transition-all duration-300 group relative">
-              <div className="absolute -top-2 -right-2">
-                <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white animate-pulse">
-                  <Crown className="w-3 h-3 mr-1" />
-                  ADMIN ACCESS
-                </Badge>
+          {/* Member Dashboard Card */}
+          <Card className="bg-gradient-to-br from-cyan-900/50 to-blue-900/50 backdrop-blur-2xl border-cyan-500/30 hover:border-cyan-400/50 transition-all duration-300 group cursor-pointer"
+                onClick={() => handleSelectDashboard('member')}>
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <User className="w-8 h-8 text-white" />
+                </div>
               </div>
-              <CardHeader>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Crown className="w-6 h-6" />
-                  </div>
-                  <Badge variant="outline" className="border-purple-500 text-purple-400">
-                    Owner
-                  </Badge>
-                </div>
-                <CardTitle className="text-2xl text-white">Owner Panel</CardTitle>
-                <CardDescription className="text-gray-300">
-                  Full system control - manage users, services, and all operations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center text-gray-300">
-                    <Users className="w-4 h-4 mr-3 text-purple-500" />
-                    <span className="text-sm">Manage all users</span>
-                  </div>
-                  <div className="flex items-center text-gray-300">
-                    <Server className="w-4 h-4 mr-3 text-purple-500" />
-                    <span className="text-sm">Control all services</span>
-                  </div>
-                  <div className="flex items-center text-gray-300">
-                    <Database className="w-4 h-4 mr-3 text-purple-500" />
-                    <span className="text-sm">Database management</span>
-                  </div>
-                </div>
-                <Link href="/owner-panel">
-                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
-                    Open Owner Panel
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Quick Stats */}
-          <Card className="bg-gray-900/50 border-white/10 backdrop-blur-lg">
-            <CardHeader>
-              <CardTitle className="text-xl text-white">Account Info</CardTitle>
-              <CardDescription className="text-gray-300">
-                Your account details
+              <CardTitle className="text-2xl font-bold text-white mb-2">
+                Member Dashboard
+              </CardTitle>
+              <CardDescription className="text-cyan-300">
+                Akses personal dashboard untuk melihat layanan dan pesanan
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Your Role</span>
-                  <Badge className={(user.role === 'ADMIN' || user.role === 'OWNER') ? 'bg-purple-500' : 'bg-blue-500'}>
-                    {user.role === 'ADMIN' || user.role === 'OWNER' ? 'Administrator' : 'Member'}
-                  </Badge>
+            <CardContent className="text-center">
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center justify-center gap-2 text-cyan-200">
+                  <Store className="w-4 h-4" />
+                  <span className="text-sm">Browse Services</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Account Status</span>
-                  <Badge className="bg-green-500">Active</Badge>
+                <div className="flex items-center justify-center gap-2 text-cyan-200">
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm">My Orders</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Email</span>
-                  <span className="text-sm text-gray-300 truncate max-w-[150px]">{user.email}</span>
+                <div className="flex items-center justify-center gap-2 text-cyan-200">
+                  <Settings className="w-4 h-4" />
+                  <span className="text-sm">Account Settings</span>
                 </div>
               </div>
+              <Button className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 transition-all duration-200 hover:shadow-cyan-500/40 group-hover:scale-105">
+                Buka Member Dashboard
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </CardContent>
           </Card>
-
-        </div>
-
-        {/* Help Section */}
-        <div className="text-center mt-16">
-          <p className="text-gray-400 mb-4">
-            Need help choosing the right dashboard?
-          </p>
-          <div className="flex justify-center space-x-4">
-            <Button variant="outline" size="sm">
-              Contact Support
-            </Button>
-          </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   )
 }

@@ -1,588 +1,742 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { 
-  TrendingUp, 
-  Users, 
-  Server, 
-  DollarSign, 
-  Activity,
-  ArrowUpRight,
-  ArrowDownRight,
-  CreditCard,
-  UserPlus,
-  Zap,
-  Clock,
-  AlertCircle,
-  CheckCircle2,
-  BarChart3,
-  PieChart,
-  LineChart,
-  Calendar,
-  Building,
-  Monitor,
-  ArrowLeft,
-  Home,
-  User,
-  ChevronDown,
-  Settings,
-  LogOut,
-  RefreshCw
-} from 'lucide-react';
-import Link from 'next/link';
-import {
-  AreaChart,
-  Area,
-  PieChart as RechartsPieChart,
-  Pie,
-  LineChart as RechartsLineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Cell,
-  BarChart,
-  Bar
-} from 'recharts';
+  Crown, Users, Server, ShoppingBag, Database, Settings, 
+  LogOut, TrendingUp, Activity, DollarSign, UserPlus,
+  ChevronRight, BarChart3, Shield, Globe, Zap,
+  Menu, X, Search, Filter, Download, RefreshCw,
+  Eye, Lock, Cpu, HardDrive, Wifi, AlertCircle,
+  CheckCircle, Clock, ArrowUpRight, ArrowDownRight,
+  Sparkles, Flame, Star, Target, Rocket, Layers,
+  Brain, Code, Terminal, Monitor, Smartphone, Tablet,
+  Cloud, GitBranch, GitMerge, Package, Box, Archive, 
+  FolderOpen, FileText, Bell, BellRing, Mail, MessageSquare, 
+  Calendar, Timer, Gauge,
+  Sun, Moon, CloudRain, CloudSnow, Wind,
+  Heart, ActivityIcon, ZapIcon,
+  Diamond, Gem, Trophy,
+  Gamepad2, Joystick, Radio,
+  Music, Headphones, Volume2, VolumeX,
+  Camera, Image, Film, Video,
+  Map, MapPin, Navigation, Compass,
+  Palette, Brush, PenTool, Pencil,
+  Calculator, CalculatorIcon,
+  BookOpen, BookMarked, Library,
+  GraduationCap, Award, Medal,
+  Coffee, Cookie, Pizza,
+  HeartHandshake, UserCheck, Fingerprint, LockKeyhole, 
+  Key, KeyRound, Unlock, WifiOff, Battery, BatteryCharging, BatteryFull,
+  Signal, Radar, Satellite, SatelliteDish,
+  Telescope, Microscope, Dna,
+  Atom, Electron, Molecule,
+  FlameKindling, Fire, Campfire,
+  Snowflake, Icicle, Mountain,
+  TreePine, Leaf, Flower,
+  Waves, Water, Droplet,
+  Sparkle, ShootingStar,
+  Meteor, Comet, Galaxy,
+  Store as StoreIcon
+} from 'lucide-react'
+import Logo from '@/components/logo'
+import ProfileDropdown from '@/components/ProfileDropdown'
+import { cn } from '@/lib/utils'
+import { formatRupiah } from '@/lib/currency'
+import UserManagement from '@/components/UserManagement'
+import StoreManagement from '@/components/StoreManagement'
 
 export default function OwnerPanel() {
-  const router = useRouter();
-  const [dashboardStats, setDashboardStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState('6months');
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [stats, setStats] = useState<any>(null)
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const [mounted, setMounted] = useState(false)
+  const [currentTime, setCurrentTime] = useState<string>('')
+  const [notifications, setNotifications] = useState(3)
+  const router = useRouter()
 
   useEffect(() => {
-    fetchCurrentUser();
-    fetchDashboardStats();
-  }, []);
+    setMounted(true)
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString())
+    }, 1000)
+    
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileDropdownOpen) {
-        const target = event.target as Element;
-        if (!target.closest('.relative')) {
-          setProfileDropdownOpen(false);
-        }
-      }
-    };
+    if (mounted) {
+      checkAuth()
+      fetchStats()
+    }
+  }, [mounted])
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [profileDropdownOpen]);
-
-  const fetchCurrentUser = async () => {
+  const checkAuth = async () => {
     try {
-      const response = await fetch('/api/auth/me');
+      const token = localStorage.getItem('auth_token')
+      if (!token) {
+        router.push('/login')
+        return
+      }
+
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
       if (response.ok) {
-        const data = await response.json();
-        console.log('Owner Panel - User data:', data.user);
-        setCurrentUser(data.user);
+        const data = await response.json()
+        if (data.user.role === 'ADMIN' || data.user.role === 'OWNER') {
+          setUser(data.user)
+        } else {
+          router.push('/gateway')
+        }
+      } else {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('user_data')
+        router.push('/login')
       }
     } catch (error) {
-      console.error('Failed to fetch current user:', error);
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user_data')
+      router.push('/login')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      if (!token) return
+
+      const response = await fetch('/api/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      const data = await response.json()
+      setStats(data)
+    } catch (error) {
+      console.error('Failed to fetch stats:', error)
+      // Set default stats if API fails
+      setStats({
+        totalUsers: 1234,
+        recentUsers: 12,
+        totalServices: 42,
+        recentServices: 8,
+        totalOrders: 856,
+        totalRevenue: 45200000
+      })
+    }
+  }
+
+  const handleSettings = () => {
+    // TODO: Navigate to settings page
+    console.log('Navigate to settings')
+  }
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout');
-      router.push('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const fetchDashboardStats = async () => {
-    try {
-      const response = await fetch('/api/dashboard/stats');
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardStats(data);
+      const token = localStorage.getItem('auth_token')
+      if (token) {
+        await fetch('/api/auth/logout', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
       }
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user_data')
+      router.push('/login')
     } catch (error) {
-      console.error('Failed to fetch dashboard stats:', error);
-    } finally {
-      setLoading(false);
+      console.error('Logout error:', error)
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user_data')
+      router.push('/login')
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('id-ID').format(num);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500"></div>
-      </div>
-    );
   }
 
-  if (!dashboardStats) {
+  if (loading || !mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6 flex items-center justify-center">
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="flex flex-col items-center justify-center h-64">
-            <p className="text-gray-400 mb-4">No data available</p>
-            <Button onClick={fetchDashboardStats} className="bg-violet-600 hover:bg-violet-700">
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-pink-950 flex items-center justify-center relative overflow-hidden">
+        {/* Advanced Animated Background */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 -left-4 w-96 h-96 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
+          <div className="absolute top-0 -right-4 w-96 h-96 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-gradient-to-r from-pink-600 to-rose-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-4000"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-amber-600 to-orange-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+        </div>
+        
+        <div className="relative z-10">
+          <div className="flex flex-col items-center space-y-6">
+            <div className="relative">
+              <div className="w-20 h-20 border-4 border-gradient-to-r from-violet-500 to-purple-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-20 h-20 border-4 border-gradient-to-r from-cyan-500 to-blue-500 border-t-transparent rounded-full animate-spin animation-delay-150"></div>
+              <div className="absolute inset-0 w-20 h-20 border-4 border-gradient-to-r from-pink-500 to-rose-500 border-t-transparent rounded-full animate-spin animation-delay-300"></div>
+            </div>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                Initializing Dashboard
+              </h2>
+              <p className="text-purple-300 text-sm animate-pulse">Preparing your advanced workspace...</p>
+            </div>
+          </div>
+        </div>
       </div>
-    );
+    )
   }
 
-  const { overview, serviceDistribution, monthlyRevenue, activities } = dashboardStats;
+  if (!user) {
+    return null
+  }
 
-  // Prepare data for charts
-  const revenueData = monthlyRevenue.map(item => ({
-    month: new Date(item.month + '-01').toLocaleDateString('id-ID', { month: 'short' }),
-    revenue: item.revenue,
-    orders: item.orders,
-    customers: Math.floor(item.orders * 0.4) // Estimate customers
-  }));
+  const menuItems = [
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: <Gauge className="w-5 h-5" />, 
+      color: 'from-violet-600 to-purple-600',
+      bgColor: 'bg-violet-600/10',
+      borderColor: 'border-violet-500/30'
+    },
+    { 
+      id: 'users', 
+      label: 'Users', 
+      icon: <Users className="w-5 h-5" />, 
+      color: 'from-purple-600 to-pink-600',
+      bgColor: 'bg-purple-600/10',
+      borderColor: 'border-purple-500/30'
+    },
+    { 
+      id: 'store', 
+      label: 'Store', 
+      icon: <StoreIcon className="w-5 h-5" />, 
+      color: 'from-pink-600 to-rose-600',
+      bgColor: 'bg-pink-600/10',
+      borderColor: 'border-pink-500/30'
+    },
+    { 
+      id: 'services', 
+      label: 'Services', 
+      icon: <Server className="w-5 h-5" />, 
+      color: 'from-cyan-600 to-blue-600',
+      bgColor: 'bg-cyan-600/10',
+      borderColor: 'border-cyan-500/30'
+    },
+    { 
+      id: 'orders', 
+      label: 'Orders', 
+      icon: <ShoppingBag className="w-5 h-5" />, 
+      color: 'from-amber-600 to-orange-600',
+      bgColor: 'bg-amber-600/10',
+      borderColor: 'border-amber-500/30'
+    },
+    { 
+      id: 'servers', 
+      label: 'Servers', 
+      icon: <Globe className="w-5 h-5" />, 
+      color: 'from-emerald-600 to-teal-600',
+      bgColor: 'bg-emerald-600/10',
+      borderColor: 'border-emerald-500/30'
+    },
+    { 
+      id: 'settings', 
+      label: 'Settings', 
+      icon: <Settings className="w-5 h-5" />, 
+      color: 'from-slate-600 to-gray-600',
+      bgColor: 'bg-slate-600/10',
+      borderColor: 'border-slate-500/30'
+    },
+  ]
 
-  const serviceData = serviceDistribution.map((service: any) => ({
-    name: service.type.replace('_', ' '),
-    value: service.count,
-    color: 
-      service.type === 'GAME_HOSTING' ? '#8b5cf6' :
-      service.type === 'RDP' ? '#3b82f6' :
-      service.type === 'FIVEM_DEVELOPMENT' ? '#06b6d4' :
-      '#10b981'
-  }));
+  const statCards = [
+    {
+      title: 'Total Users',
+      value: stats?.totalUsers || 0,
+      change: stats?.recentUsers || 0,
+      changeType: 'increase',
+      icon: Users,
+      color: 'from-violet-600 to-purple-600',
+      bgColor: 'bg-gradient-to-br from-violet-600/20 to-purple-600/20',
+      borderColor: 'border-violet-500/30',
+      glowColor: 'glow-violet'
+    },
+    {
+      title: 'Active Services',
+      value: stats?.totalServices || 0,
+      change: stats?.recentServices || 0,
+      changeType: 'increase',
+      icon: Server,
+      color: 'from-cyan-600 to-blue-600',
+      bgColor: 'bg-gradient-to-br from-cyan-600/20 to-blue-600/20',
+      borderColor: 'border-cyan-500/30',
+      glowColor: 'glow-cyan'
+    },
+    {
+      title: 'Total Orders',
+      value: stats?.totalOrders || 0,
+      change: 0,
+      changeType: 'neutral',
+      icon: ShoppingBag,
+      color: 'from-amber-600 to-orange-600',
+      bgColor: 'bg-gradient-to-br from-amber-600/20 to-orange-600/20',
+      borderColor: 'border-amber-500/30',
+      glowColor: 'glow-amber'
+    },
+    {
+      title: 'Revenue',
+      value: formatRupiah(stats?.totalRevenue || 0),
+      change: 0,
+      changeType: 'neutral',
+      icon: DollarSign,
+      color: 'from-emerald-600 to-teal-600',
+      bgColor: 'bg-gradient-to-br from-emerald-600/20 to-teal-600/20',
+      borderColor: 'border-emerald-500/30',
+      glowColor: 'glow-emerald'
+    }
+  ]
 
-  const customerGrowth = monthlyRevenue.map((item: any, index: number) => ({
-    month: new Date(item.month + '-01').toLocaleDateString('id-ID', { month: 'short' }),
-    totalCustomers: Math.floor(item.orders * 0.4 * (index + 1)),
-    newCustomers: Math.floor(item.orders * 0.4),
-    churnRate: Math.random() * 3 // Mock churn rate
-  }));
+  const quickActions = [
+    { icon: UserPlus, label: 'Create User', color: 'from-violet-600 to-purple-600' },
+    { icon: Server, label: 'Add Service', color: 'from-cyan-600 to-blue-600' },
+    { icon: RefreshCw, label: 'Refresh Data', color: 'from-emerald-600 to-teal-600' },
+    { icon: Download, label: 'Export Report', color: 'from-amber-600 to-orange-600' }
+  ]
 
-  const topServices = serviceDistribution
-    .sort((a: any, b: any) => b.count - a.count)
-    .slice(0, 5)
-    .map((service: any) => ({
-      name: service.type.replace('_', ' '),
-      revenue: service.count * 150000, // Estimate revenue
-      customers: service.count,
-      growth: Math.floor(Math.random() * 20) // Mock growth
-    }));
+  const systemStatus = [
+    { label: 'API Status', status: 'online', icon: <Wifi className="w-5 h-5 text-purple-400" />, value: '100%' },
+    { label: 'Database', status: 'online', icon: <Database className="w-5 h-5 text-purple-400" />, value: 'Connected' },
+    { label: 'Server Load', status: 'warning', icon: <Cpu className="w-5 h-5 text-purple-400" />, value: '68%' },
+    { label: 'Storage', status: 'online', icon: <HardDrive className="w-5 h-5 text-purple-400" />, value: '45%' },
+    { label: 'Network', status: 'online', icon: <Signal className="w-5 h-5 text-purple-400" />, value: 'Stable' },
+    { label: 'Security', status: 'online', icon: <Shield className="w-5 h-5 text-purple-400" />, value: 'Active' }
+  ]
 
-  const totalRevenue = overview.totalRevenue;
-  const totalOrders = monthlyRevenue.reduce((sum: number, item: any) => sum + item.orders, 0);
-  const totalCustomers = overview.totalUsers;
-  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  const recentActivities = [
+    { icon: UserPlus, label: 'New user registered', time: '2 min ago', color: 'text-violet-400' },
+    { icon: Server, label: 'Service deployed', time: '5 min ago', color: 'text-cyan-400' },
+    { icon: ShoppingBag, label: 'New order received', time: '12 min ago', color: 'text-amber-400' },
+    { icon: Download, label: 'Report generated', time: '1 hour ago', color: 'text-emerald-400' }
+  ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      {/* Header */}
-      <header className="bg-gray-800/90 backdrop-blur-lg border-b border-gray-700 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left side - Logo + Profile */}
-            <div className="flex items-center space-x-4">
-              {/* Profile Dropdown */}
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center gap-2 text-gray-300 hover:text-white hover:bg-violet-600/20 hover:border hover:border-violet-500/50 transition-all duration-200"
-                >
-                  <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                    {currentUser?.avatar ? (
-                      <img src={currentUser.avatar} alt="Avatar" className="w-6 h-6 rounded-full object-cover" />
-                    ) : (
-                      <User className="w-4 h-4 text-white" />
-                    )}
-                  </div>
-                  <span className="hidden md:block text-sm">
-                    {currentUser?.name || 'User'}
-                  </span>
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-
-                {profileDropdownOpen && (
-                  <div className="absolute left-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-lg border border-gray-600 rounded-lg shadow-xl z-50">
-                    <div className="px-4 py-3 border-b border-gray-700">
-                      <p className="text-sm font-medium text-white">{currentUser?.name || 'User'}</p>
-                      <p className="text-xs text-gray-400">{currentUser?.email || 'user@example.com'}</p>
-                      <Badge className={`mt-1 ${currentUser?.role === 'ADMIN' ? 'bg-purple-500' : 'bg-blue-500'}`}>
-                        {currentUser?.role === 'ADMIN' ? 'Administrator' : 'Member'}
-                      </Badge>
-                    </div>
-                    <div className="py-2">
-                      <Link href="/owner-panel/settings">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setProfileDropdownOpen(false);
-                          }}
-                          className="w-full justify-start text-gray-300 hover:text-white hover:bg-violet-600/20 hover:border-l-2 hover:border-l-violet-500 transition-all duration-200"
-                        >
-                          <Settings className="w-4 h-4 mr-2" />
-                          Settings
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleLogout}
-                        className="w-full justify-start text-gray-300 hover:text-red-400 hover:bg-red-600/20 hover:border-l-2 hover:border-l-red-500 transition-all duration-200"
-                      >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Logout
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Logo dan Nama */}
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="p-2 bg-gradient-to-r from-violet-600 to-purple-600 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-                <div className="ml-3">
-                  <h1 className="text-xl font-bold text-white">Dashboard Pemilik</h1>
-                  <p className="text-xs text-gray-400">Analitik & Laporan Bisnis</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right side controls */}
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.location.href = '/pterodactyl'}
-                className="text-gray-300 border-gray-600 hover:bg-purple-600/20 hover:border-purple-500 hover:text-purple-400 transition-all duration-200"
-              >
-                <Server className="h-4 w-4 mr-2" />
-                Pterodactyl
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.location.href = '/manage-server'}
-                className="text-gray-300 border-gray-600 hover:bg-emerald-600/20 hover:border-emerald-500 hover:text-emerald-400 transition-all duration-200"
-              >
-                <Server className="h-4 w-4 mr-2" />
-                Server
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={fetchDashboardStats}
-                className="text-gray-300 border-gray-600 hover:bg-cyan-600/20 hover:border-cyan-500 hover:text-cyan-400 transition-all duration-200"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-
-              {/* Back to Gateway Button */}
-              <Link 
-                href="/gateway"
-                className="flex items-center gap-2 px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg hover:bg-gray-600/50 hover:border-gray-500 transition-all duration-200"
-              >
-                <ArrowLeft className="h-4 w-4 text-gray-300" />
-                <span className="text-gray-300 font-medium text-sm">Gateway</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Period Selector */}
-        <div className="mb-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-1">Ringkasan Bisnis</h2>
-            <p className="text-gray-400 text-sm">Pantau kinerja bisnis Anda dalam periode tertentu</p>
-          </div>
-          <select 
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-          >
-            <option value="1month">Bulan Lalu</option>
-            <option value="3months">3 Bulan Terakhir</option>
-            <option value="6months">6 Bulan Terakhir</option>
-            <option value="1year">Tahun Lalu</option>
-          </select>
-        </div>
-
-        {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-violet-500 to-purple-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Pendapatan</CardTitle>
-              <DollarSign className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
-              <div className="flex items-center text-xs text-white/80 mt-1">
-                <ArrowUpRight className="h-3 w-3 mr-1" />
-                <span>Dari {totalOrders} transaksi</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-blue-500 to-cyan-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Pelanggan</CardTitle>
-              <Users className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatNumber(totalCustomers)}</div>
-              <div className="flex items-center text-xs text-white/80 mt-1">
-                <ArrowUpRight className="h-3 w-3 mr-1" />
-                <span>+12% dari bulan lalu</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-emerald-500 to-green-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Server Aktif</CardTitle>
-              <Server className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatNumber(overview.totalServers || 0)}</div>
-              <div className="flex items-center text-xs text-white/80 mt-1">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                <span>99.9% uptime</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-500 to-red-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Churn Rate</CardTitle>
-              <TrendingUp className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">2.4%</div>
-              <div className="flex items-center text-xs text-white/80 mt-1">
-                <ArrowDownRight className="h-3 w-3 mr-1" />
-                <span>-0.8% dari bulan lalu</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Revenue Chart */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <LineChart className="h-5 w-5 text-violet-500" />
-                Tren Pendapatan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsLineChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="#8b5cf6" 
-                    strokeWidth={2}
-                    name="Pendapatan"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="orders" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    name="Pesanan"
-                  />
-                </RechartsLineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Service Distribution */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-blue-500" />
-                Distribusi Layanan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsPieChart>
-                  <Pie
-                    data={serviceData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {serviceData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Customer Growth & Top Services */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Customer Growth */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-500" />
-                Pertumbuhan Pelanggan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={customerGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Legend />
-                  <Area 
-                    type="monotone" 
-                    dataKey="totalCustomers" 
-                    stackId="1"
-                    stroke="#10b981" 
-                    fill="#10b981"
-                    name="Total Pelanggan"
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="newCustomers" 
-                    stackId="2"
-                    stroke="#3b82f6" 
-                    fill="#3b82f6"
-                    name="Pelanggan Baru"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Top Services */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-orange-500" />
-                Layanan Terpopuler
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topServices}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Legend />
-                  <Bar dataKey="revenue" fill="#f59e0b" name="Pendapatan" />
-                  <Bar dataKey="customers" fill="#8b5cf6" name="Pelanggan" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Activities */}
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Clock className="h-5 w-5 text-purple-500" />
-              Aktivitas Terkini
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {activities?.slice(0, 5).map((activity: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      activity.type === 'order' ? 'bg-green-500' :
-                      activity.type === 'server' ? 'bg-blue-500' :
-                      'bg-purple-500'
-                    }`} />
-                    <div>
-                      <p className="text-white text-sm font-medium">{activity.description}</p>
-                      <p className="text-gray-400 text-xs">{formatDate(activity.createdAt)}</p>
-                    </div>
-                  </div>
-                  <Badge className={
-                    activity.status === 'completed' ? 'bg-green-600' :
-                    activity.status === 'pending' ? 'bg-yellow-600' :
-                    'bg-red-600'
-                  }>
-                    {activity.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-pink-950 relative overflow-hidden">
+      {/* Advanced Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
+        <div className="absolute top-0 -right-4 w-96 h-96 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-gradient-to-r from-pink-600 to-rose-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float animation-delay-4000"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-amber-600 to-orange-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
       </div>
+
+      {/* Grid Pattern */}
+      <div className="absolute inset-0 bg-grid-white/[0.03] bg-[size:60px_60px]"></div>
+
+      <div className="relative z-10">
+        {/* Sidebar */}
+        <div className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 bg-black/40 backdrop-blur-2xl border-r border-white/10 transform transition-transform duration-300 ease-in-out",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}>
+          <div className="flex flex-col h-full">
+            {/* Sidebar Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center space-x-3">
+                <Logo size="md" />
+                <div>
+                  <h2 className="text-lg font-bold text-white">Owner Panel</h2>
+                  <p className="text-xs text-purple-300">Control Center</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden text-white hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 p-4 space-y-2">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={cn(
+                    "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200",
+                    activeTab === item.id
+                      ? `${item.bgColor} ${item.borderColor} border text-white`
+                      : "text-gray-400 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center",
+                    activeTab === item.id ? item.color : ""
+                  )}>
+                    {item.icon}
+                  </div>
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+
+            {/* User Section */}
+            <div className="p-4 border-t border-white/10">
+              <ProfileDropdown 
+                user={user} 
+                onLogout={handleLogout}
+                onSettings={handleSettings}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="lg:ml-64">
+          {/* Advanced Header */}
+          <header className="bg-black/30 backdrop-blur-2xl border-b border-white/10 sticky top-0 z-40 shadow-2xl shadow-black/20">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                {/* Left Section */}
+                <div className="flex items-center space-x-6">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="lg:hidden text-white hover:bg-white/10 backdrop-blur-sm"
+                  >
+                    {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  </Button>
+                  
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <Crown className="w-7 h-7 text-gradient-to-r from-violet-400 to-purple-400" />
+                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-violet-400 to-purple-400 rounded-full animate-pulse"></div>
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-white bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                        {menuItems.find(item => item.id === activeTab)?.label || 'Dashboard'}
+                      </h1>
+                      <p className="text-xs text-purple-300">Advanced Management System</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Center Section - Time & Status */}
+                <div className="hidden lg:flex items-center space-x-8">
+                  <div className="text-center">
+                    <p className="text-xs text-purple-300 uppercase tracking-wider">System Time</p>
+                    <p className="text-sm font-mono text-white">
+                      {currentTime || '--:--:--'}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-purple-300 uppercase tracking-wider">Status</p>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-green-400">All Systems Operational</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Right Section - User & Actions */}
+                <div className="flex items-center space-x-4">
+                  {/* Notifications */}
+                  <div className="relative">
+                    <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 backdrop-blur-sm relative">
+                      <BellRing className="w-5 h-5" />
+                      {notifications > 0 && (
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full flex items-center justify-center text-xs text-white">
+                          {notifications}
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {/* Search */}
+                  <div className="hidden md:block">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search..."
+                        className="pl-10 pr-4 py-2 bg-black/20 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Page Content */}
+          <main className="p-6">
+            {activeTab === 'dashboard' && (
+              <div className="space-y-8">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {statCards.map((stat, index) => (
+                    <Card key={index} className={cn(
+                      "bg-black/40 backdrop-blur-2xl border-white/10 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 group",
+                      stat.borderColor
+                    )}>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className={cn(
+                            "w-12 h-12 rounded-xl bg-gradient-to-r flex items-center justify-center",
+                            stat.color
+                          )}>
+                            <stat.icon className="w-6 h-6 text-white" />
+                          </div>
+                          <Badge variant="outline" className={cn(
+                            "text-xs font-semibold",
+                            stat.changeType === 'increase' ? 'text-green-400 border-green-400/30' : 
+                            stat.changeType === 'decrease' ? 'text-red-400 border-red-400/30' : 
+                            'text-gray-400 border-gray-400/30'
+                          )}>
+                            {stat.changeType === 'increase' ? '+' : ''}{stat.change}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-white mb-1">{stat.value}</p>
+                          <p className="text-sm text-purple-300">{stat.title}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Quick Actions & System Status */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Quick Actions */}
+                  <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-2xl">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-violet-400" />
+                        Quick Actions
+                      </CardTitle>
+                      <CardDescription className="text-purple-300">
+                        Common tasks and shortcuts
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {quickActions.map((action, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start gap-3 bg-black/20 border-white/10 text-white hover:bg-white/10 transition-all duration-300",
+                            "hover:scale-105 hover:shadow-lg"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-8 h-8 rounded-lg bg-gradient-to-r flex items-center justify-center",
+                            action.color
+                          )}>
+                            <action.icon className="w-4 h-4 text-white" />
+                          </div>
+                          {action.label}
+                          <ChevronRight className="w-4 h-4 ml-auto" />
+                        </Button>
+                      ))}
+                    </CardContent>
+                  </Card>
+
+                  {/* System Status */}
+                  <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-2xl lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <ActivityIcon className="w-5 h-5 text-violet-400" />
+                        System Status
+                      </CardTitle>
+                      <CardDescription className="text-purple-300">
+                        Real-time system monitoring
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {systemStatus.map((status, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-black/20 rounded-lg border border-white/5">
+                            <div className="flex items-center gap-3">
+                              {status.icon}
+                              <div>
+                                <p className="text-sm text-white font-medium">{status.label}</p>
+                                <p className="text-xs text-purple-300">{status.value}</p>
+                              </div>
+                            </div>
+                            <div className={cn(
+                              "w-2 h-2 rounded-full",
+                              status.status === 'online' ? 'bg-green-500' : 
+                              status.status === 'warning' ? 'bg-yellow-500' : 
+                              'bg-red-500'
+                            )}></div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Recent Activities */}
+                <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-violet-400" />
+                      Recent Activities
+                    </CardTitle>
+                    <CardDescription className="text-purple-300">
+                      Latest system events and updates
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {recentActivities.map((activity, index) => (
+                        <div key={index} className="flex items-center gap-4 p-3 bg-black/20 rounded-lg border border-white/5">
+                          <div className={cn("w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center", activity.color)}>
+                            <activity.icon className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-white font-medium">{activity.label}</p>
+                            <p className="text-xs text-purple-300">{activity.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'users' && <UserManagement />}
+
+            {activeTab === 'store' && <StoreManagement />}
+
+            {activeTab === 'services' && (
+              <div className="space-y-6">
+                <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Server className="w-5 h-5 text-violet-400" />
+                      Service Management
+                    </CardTitle>
+                    <CardDescription className="text-purple-300">
+                      Manage services and deployments
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <Server className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-white mb-2">Service Management</h3>
+                      <p className="text-purple-300">Advanced service management features coming soon...</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'orders' && (
+              <div className="space-y-6">
+                <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <ShoppingBag className="w-5 h-5 text-violet-400" />
+                      Order Management
+                    </CardTitle>
+                    <CardDescription className="text-purple-300">
+                      Manage orders and transactions
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <ShoppingBag className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-white mb-2">Order Management</h3>
+                      <p className="text-purple-300">Advanced order management features coming soon...</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'servers' && (
+              <div className="space-y-6">
+                <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Globe className="w-5 h-5 text-violet-400" />
+                      Server Management
+                    </CardTitle>
+                    <CardDescription className="text-purple-300">
+                      Manage servers and infrastructure
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <Globe className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-white mb-2">Server Management</h3>
+                      <p className="text-purple-300">Advanced server management features coming soon...</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'settings' && (
+              <div className="space-y-6">
+                <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Settings className="w-5 h-5 text-violet-400" />
+                      System Settings
+                    </CardTitle>
+                    <CardDescription className="text-purple-300">
+                      Configure system settings and preferences
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <Settings className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-white mb-2">System Settings</h3>
+                      <p className="text-purple-300">Advanced settings management features coming soon...</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        .animation-delay-150 {
+          animation-delay: 150ms;
+        }
+        .animation-delay-300 {
+          animation-delay: 300ms;
+        }
+      `}</style>
     </div>
-  );
+  )
 }

@@ -1,430 +1,227 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Server,
-  CreditCard,
-  Activity,
-  TrendingUp,
-  Clock,
-  CheckCircle2,
-  Calendar,
-  DollarSign,
-  User,
-  Settings,
-  ChevronDown,
-  RefreshCw,
-  ArrowLeft,
-  Plus,
-  LogOut,
-  Gamepad2,
-  Monitor,
-  Code,
-} from "lucide-react";
-import Link from "next/link";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
-interface ServerData {
-  id: string;
-  name: string;
-  type: string;
-  status: string;
-  price: number;
-  config: any;
-  expiresAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface OrderData {
-  id: string;
-  amount: number;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { User, Store, Package, Settings, LogOut, ArrowLeft, TrendingUp } from 'lucide-react'
+import Logo from '@/components/logo'
+import ProfileDropdown from '@/components/ProfileDropdown'
 
 interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatar?: string;
-  isActive: boolean;
-  createdAt: string;
+  id: string
+  name: string
+  email: string
+  role: string
+  avatar?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export default function MemberDashboard() {
-  const [activeTab, setActiveTab] = useState("overview");
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [servers, setServers] = useState<ServerData[]>([]);
-  const [orders, setOrders] = useState<OrderData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [showNewServerModal, setShowNewServerModal] = useState(false);
-  const [newServer, setNewServer] = useState({
-    name: "",
-    type: "",
-    duration: "30",
-  });
-  const router = useRouter();
+  const router = useRouter()
+  const [user, setUser] = useState<UserData | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchMemberData();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout");
-      router.push("/");
-    } catch (error) {
-      console.error("Logout error:", error);
+    const token = localStorage.getItem('auth_token')
+    const userData = localStorage.getItem('user_data')
+    
+    if (!token || !userData) {
+      router.push('/login')
+      return
     }
-  };
 
-  const fetchMemberData = async () => {
     try {
-      const [userRes, serversRes, ordersRes] = await Promise.all([
-        fetch("/api/auth/me"),
-        fetch("/api/member/servers"),
-        fetch("/api/member/orders"),
-      ]);
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        setUserData(userData.user);
-      }
-      if (serversRes.ok) {
-        const serversData = await serversRes.json();
-        setServers(serversData.servers || []);
-      }
-      if (ordersRes.ok) {
-        const ordersData = await ordersRes.json();
-        setOrders(ordersData.orders || []);
-      }
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
     } catch (error) {
-      console.error("Failed to fetch member data:", error);
+      console.error('Failed to parse user data:', error)
+      router.push('/login')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [router])
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchMemberData();
-    setTimeout(() => setRefreshing(false), 1000);
-  };
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user_data')
+    router.push('/login')
+  }
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
+  const handleBackToGateway = () => {
+    router.push('/gateway')
+  }
 
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const handleSettings = () => {
+    // TODO: Navigate to settings page
+    console.log('Navigate to settings')
+  }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-      case "COMPLETED":
-        return "bg-green-500";
-      case "PENDING":
-        return "bg-amber-500";
-      case "SUSPENDED":
-      case "CANCELLED":
-      case "FAILED":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-        return "Aktif";
-      case "PENDING":
-        return "Menunggu";
-      case "SUSPENDED":
-        return "Ditangguhkan";
-      case "CANCELLED":
-        return "Dibatalkan";
-      case "COMPLETED":
-        return "Selesai";
-      default:
-        return status;
-    }
-  };
-
-  const getServiceIcon = (type: string) => {
-    switch (type) {
-      case "GAME_HOSTING":
-        return <Gamepad2 className="w-5 h-5" />;
-      case "RDP":
-        return <Monitor className="w-5 h-5" />;
-      case "FIVEM_DEVELOPMENT":
-      case "ROBLOX_DEVELOPMENT":
-        return <Code className="w-5 h-5" />;
-      default:
-        return <Server className="w-5 h-5" />;
-    }
-  };
-
-  const activeServers = servers.filter((s) => s.status === "ACTIVE").length;
-  const totalSpent = orders.reduce((sum, o) => sum + o.amount, 0);
-  const completedOrders = orders.filter((o) => o.status === "COMPLETED").length;
-
-  if (loading)
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900">
-        <div className="animate-spin h-12 w-12 rounded-full border-b-2 border-violet-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-cyan-950 via-blue-950 to-indigo-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
       </div>
-    );
+    )
+  }
+
+  if (!user) {
+    return null
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      {/* HEADER */}
-      <header className="bg-gray-800/90 border-b border-gray-700 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <User className="h-6 w-6 text-violet-400" />
-            <h1 className="text-xl font-bold text-white">Member Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="text-gray-300 border-gray-600 hover:bg-violet-600/20 hover:border-violet-500 hover:text-violet-400"
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="text-red-400 hover:text-white hover:bg-red-600/20"
-            >
-              <LogOut className="h-4 w-4 mr-2" /> Logout
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-cyan-950 via-blue-950 to-indigo-950">
+      <header className="bg-black/20 backdrop-blur-lg border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToGateway}
+                className="text-cyan-300 hover:text-white hover:bg-cyan-500/20"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Kembali
+              </Button>
+              <Logo size="sm" />
+              <h1 className="text-xl font-bold text-white">Member Dashboard</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <ProfileDropdown 
+                user={user} 
+                onLogout={handleLogout}
+                onSettings={handleSettings}
+              />
+            </div>
           </div>
         </div>
       </header>
 
-      {/* CONTENT */}
-      <main className="max-w-7xl mx-auto p-6">
-        <h2 className="text-3xl font-bold text-white mb-4">
-          Selamat datang, {userData?.name || "Member"} 👋
-        </h2>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-white mb-2">
+            Selamat Datang, {user.name}! 👋
+          </h2>
+          <p className="text-cyan-300">
+            Ini adalah dashboard personal Anda. Kelola akun dan lihat layanan yang tersedia.
+          </p>
+        </div>
 
-        {/* CARD METRICS */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500 to-cyan-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex justify-between">
-              <CardTitle>Server Aktif</CardTitle>
-              <Server className="h-4 w-4" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-cyan-900/50 to-blue-900/50 backdrop-blur-2xl border-cyan-500/30">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-cyan-300">
+                Total Pesanan
+              </CardTitle>
+              <Package className="h-4 w-4 text-cyan-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{activeServers}</div>
+              <div className="text-2xl font-bold text-white">0</div>
+              <p className="text-xs text-cyan-400">
+                Belum ada pesanan
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex justify-between">
-              <CardTitle>Total Pengeluaran</CardTitle>
-              <DollarSign className="h-4 w-4" />
+          <Card className="bg-gradient-to-br from-emerald-900/50 to-green-900/50 backdrop-blur-2xl border-emerald-500/30">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-emerald-300">
+                Status Akun
+              </CardTitle>
+              <User className="h-4 w-4 text-emerald-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalSpent)}</div>
+              <div className="text-2xl font-bold text-white">Aktif</div>
+              <p className="text-xs text-emerald-400">
+                Akun Anda dalam kondisi baik
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500 to-pink-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex justify-between">
-              <CardTitle>Pesanan Selesai</CardTitle>
-              <CheckCircle2 className="h-4 w-4" />
+          <Card className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 backdrop-blur-2xl border-purple-500/30">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-purple-300">
+                Member Sejak
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-purple-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{completedOrders}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-500 to-red-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex justify-between">
-              <CardTitle>Member Sejak</CardTitle>
-              <Calendar className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {userData ? new Date(userData.createdAt).getFullYear() : "-"}
+              <div className="text-2xl font-bold text-white">
+                {new Date(user.createdAt).toLocaleDateString('id-ID', { 
+                  day: 'numeric', 
+                  month: 'short', 
+                  year: 'numeric' 
+                })}
               </div>
+              <p className="text-xs text-purple-400">
+                Bergabung sebagai {user.role.toLowerCase()}
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* TABS */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-gray-800 border border-gray-700">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-violet-600">
-              <Activity className="h-4 w-4 mr-2" /> Ringkasan
-            </TabsTrigger>
-            <TabsTrigger value="servers" className="data-[state=active]:bg-violet-600">
-              <Server className="h-4 w-4 mr-2" /> Server Saya
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="data-[state=active]:bg-violet-600">
-              <CreditCard className="h-4 w-4 mr-2" /> Riwayat Pesanan
-            </TabsTrigger>
-          </TabsList>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-cyan-900/50 to-blue-900/50 backdrop-blur-2xl border-cyan-500/30">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <Store className="w-5 h-5 text-cyan-400" />
+                Jelajahi Layanan
+              </CardTitle>
+              <CardDescription className="text-cyan-300">
+                Lihat semua layanan dan produk yang tersedia
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white">
+                Lihat Semua Layanan
+              </Button>
+            </CardContent>
+          </Card>
 
-          {/* SERVERS TAB */}
-          <TabsContent value="servers">
-            <Card className="bg-gray-800 border-gray-700 mt-6">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Server className="h-5 w-5 text-blue-500" />
-                  Semua Server Saya
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {servers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Server className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                    <p className="text-gray-400">Anda belum memiliki server</p>
+          <Card className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 backdrop-blur-2xl border-purple-500/30">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <Settings className="w-5 h-5 text-purple-400" />
+                Pengaturan Akun
+              </CardTitle>
+              <CardDescription className="text-purple-300">
+                Kelola profil dan pengaturan akun Anda
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
+                Edit Profil
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
 
-                    {/* POPUP PESAN BARU */}
-                    <Dialog open={showNewServerModal} onOpenChange={setShowNewServerModal}>
-                      <DialogTrigger asChild>
-                        <Button className="mt-4 bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-700 hover:to-violet-700">
-                          <Plus className="w-4 h-4 mr-2" /> Pesan Server Baru
-                        </Button>
-                      </DialogTrigger>
-
-                      <DialogContent className="bg-gray-900 border border-violet-700 text-white max-w-md">
-                        <DialogHeader>
-                          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-pink-400 to-violet-400 bg-clip-text text-transparent">
-                            Pesan Server Baru
-                          </DialogTitle>
-                          <DialogDescription className="text-gray-400">
-                            Pilih layanan dan isi detail pemesananmu di bawah.
-                          </DialogDescription>
-                        </DialogHeader>
-
-                        <div className="space-y-4 mt-4">
-                          <div>
-                            <Label>Nama Server</Label>
-                            <Input
-                              placeholder="contoh: My Private Server"
-                              value={newServer.name}
-                              onChange={(e) =>
-                                setNewServer({ ...newServer, name: e.target.value })
-                              }
-                              className="bg-gray-800 border-gray-700 text-white mt-1"
-                            />
-                          </div>
-
-                          <div>
-                            <Label>Jenis Layanan</Label>
-                            <Select
-                              value={newServer.type}
-                              onValueChange={(val) =>
-                                setNewServer({ ...newServer, type: val })
-                              }
-                            >
-                              <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-1">
-                                <SelectValue placeholder="Pilih jenis server" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-gray-800 text-white border-gray-700">
-                                <SelectItem value="GAME_HOSTING">🎮 Game Hosting</SelectItem>
-                                <SelectItem value="RDP">💻 RDP (Windows Server)</SelectItem>
-                                <SelectItem value="FIVEM_DEVELOPMENT">
-                                  🚓 FiveM Development
-                                </SelectItem>
-                                <SelectItem value="ROBLOX_DEVELOPMENT">
-                                  🧱 Roblox Development
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <Label>Durasi (hari)</Label>
-                            <Select
-                              value={newServer.duration}
-                              onValueChange={(val) =>
-                                setNewServer({ ...newServer, duration: val })
-                              }
-                            >
-                              <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-1">
-                                <SelectValue placeholder="Pilih durasi" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-gray-800 text-white border-gray-700">
-                                <SelectItem value="30">30 Hari</SelectItem>
-                                <SelectItem value="90">90 Hari</SelectItem>
-                                <SelectItem value="180">180 Hari</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <DialogFooter className="mt-6 flex justify-end">
-                          <Button
-                            onClick={() => {
-                              // TODO: kirim data ke API
-                              console.log("Pesan server baru:", newServer);
-                              setShowNewServerModal(false);
-                            }}
-                            className="bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-700 hover:to-violet-700"
-                          >
-                            Konfirmasi Pesanan
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                ) : (
-                  <p className="text-gray-300">Server aktif: {servers.length}</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <Card className="bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-2xl border-white/10">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-white">Aktivitas Terbaru</CardTitle>
+            <CardDescription className="text-gray-400">
+              Riwayat aktivitas akun Anda
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <Package className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-300 mb-2">Belum Ada Aktivitas</h3>
+              <p className="text-gray-500 mb-4">
+                Anda belum memiliki aktivitas apa pun. Mulai dengan menjelajahi layanan kami!
+              </p>
+              <Button 
+                onClick={() => router.push('/gateway')}
+                className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white"
+              >
+                Jelajahi Sekarang
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
-  );
+  )
 }

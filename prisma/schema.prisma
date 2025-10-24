@@ -109,9 +109,25 @@ model ApiConfiguration {
   updatedAt   DateTime @updatedAt
 }
 
+model StoreItem {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  price       Float
+  category    StoreCategory
+  imageUrl    String?
+  imageLink   String?
+  isActive    Boolean     @default(true)
+  featured    Boolean     @default(false)
+  metadata    Json?       // Additional data like download links, specs, etc.
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
 enum Role {
   USER
   ADMIN
+  OWNER
 }
 
 enum ServiceType {
@@ -133,4 +149,11 @@ enum OrderStatus {
   COMPLETED
   CANCELLED
   REFUNDED
+}
+
+enum StoreCategory {
+  MOD
+  GAME
+  HOSTING
+  SERVER
 }
