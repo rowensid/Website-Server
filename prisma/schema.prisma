@@ -22,6 +22,7 @@ model User {
   pteroServers PterodactylServer[]
   services     Service[]
   sessions     Session[]
+  loginHistory LoginHistory[]
 }
 
 model Session {
@@ -109,9 +110,26 @@ model ApiConfiguration {
   updatedAt   DateTime @updatedAt
 }
 
+model LoginHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  loginTime   DateTime @default(now())
+  ip          String
+  userAgent   String
+  location    String?
+  device      String?
+  browser     String?
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([loginTime])
+}
+
 model StoreItem {
   id          String      @id @default(cuid())
-  title       String
+  title       String      @unique
   description String?
   price       Float
   category    StoreCategory

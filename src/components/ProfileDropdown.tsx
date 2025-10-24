@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   User, 
   Settings, 
@@ -15,7 +17,10 @@ import {
   Monitor,
   MapPin,
   Clock,
-  X
+  X,
+  Smartphone,
+  Tablet,
+  Laptop
 } from 'lucide-react'
 
 interface UserData {
@@ -50,7 +55,9 @@ export default function ProfileDropdown({ user, onLogout, onSettings }: ProfileD
   const [showHistory, setShowHistory] = useState(false)
   const [loginHistory, setLoginHistory] = useState<LoginHistory[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 'auto', bottom: 'auto' })
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -64,8 +71,38 @@ export default function ProfileDropdown({ user, onLogout, onSettings }: ProfileD
   }, [])
 
   const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const dropdownWidth = 320 // lebar dropdown
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      
+      // Hitung posisi yang optimal
+      let left = rect.right - dropdownWidth
+      let right = 'auto'
+      let top = rect.bottom + 8
+      let bottom = 'auto'
+      
+      // Jika dropdown kepotong di kiri
+      if (left < 10) {
+        left = 10
+      }
+      
+      // Jika dropdown kepotong di kanan
+      if (left + dropdownWidth > viewportWidth - 10) {
+        left = viewportWidth - dropdownWidth - 10
+      }
+      
+      // Jika dropdown kepotong di bawah, tampilkan di atas
+      if (top + 400 > viewportHeight - 10) { // 400 adalah perkiraan tinggi dropdown
+        bottom = viewportHeight - rect.top + 8
+        top = 'auto'
+      }
+      
+      setDropdownPosition({ top, left: left as any, right: right as any, bottom: bottom as any })
+    }
+    setIsOpen(!isOpen)
+  }
 
   const fetchLoginHistory = async () => {
     setLoadingHistory(true)
@@ -144,12 +181,14 @@ export default function ProfileDropdown({ user, onLogout, onSettings }: ProfileD
   const getDeviceIcon = (device?: string) => {
     switch (device?.toLowerCase()) {
       case 'mobile':
-        return '📱'
+        return <Smartphone className="w-4 h-4" />
       case 'tablet':
-        return '📱'
+        return <Tablet className="w-4 h-4" />
       case 'desktop':
+      case 'laptop':
+        return <Laptop className="w-4 h-4" />
       default:
-        return '💻'
+        return <Monitor className="w-4 h-4" />
     }
   }
 
@@ -184,6 +223,7 @@ export default function ProfileDropdown({ user, onLogout, onSettings }: ProfileD
     <>
       <div className="relative" ref={dropdownRef}>
         <Button
+          ref={buttonRef}
           variant="ghost"
           size="sm"
           onClick={toggleDropdown}
@@ -192,20 +232,28 @@ export default function ProfileDropdown({ user, onLogout, onSettings }: ProfileD
           <div className="w-8 h-8 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full flex items-center justify-center">
             <User className="w-4 h-4 text-white" />
           </div>
-          <ChevronUp className="w-4 h-4 text-cyan-300 transition-transform duration-200" />
+          <ChevronUp className={`w-4 h-4 text-cyan-300 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </Button>
 
         {isOpen && (
-          <div className="absolute right-0 bottom-full mb-2 w-80 bg-gray-900/95 backdrop-blur-xl border border-cyan-500/30 rounded-lg shadow-2xl shadow-black/50 z-50">
+          <div 
+            className="fixed w-80 bg-gray-900/95 backdrop-blur-xl border border-cyan-500/30 rounded-lg shadow-2xl shadow-black/50 z-50"
+            style={{
+              top: dropdownPosition.top !== 'auto' ? `${dropdownPosition.top}px` : 'auto',
+              left: dropdownPosition.left !== 'auto' ? `${dropdownPosition.left}px` : 'auto',
+              right: dropdownPosition.right !== 'auto' ? `${dropdownPosition.right}px` : 'auto',
+              bottom: dropdownPosition.bottom !== 'auto' ? `${dropdownPosition.bottom}px` : 'auto',
+            }}
+          >
             {/* User Info */}
             <div className="p-4 border-b border-cyan-500/20">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full flex items-center justify-center">
                   <User className="w-6 h-6 text-white" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-white">{user.name}</h3>
-                  <p className="text-sm text-cyan-300">{user.email}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-white truncate">{user.name}</h3>
+                  <p className="text-sm text-cyan-300 truncate">{user.email}</p>
                   <div className="flex items-center gap-1 mt-1">
                     <Shield className="w-3 h-3 text-green-400" />
                     <span className="text-xs text-green-400">{user.role}</span>
@@ -252,119 +300,137 @@ export default function ProfileDropdown({ user, onLogout, onSettings }: ProfileD
         )}
       </div>
 
-      {/* Login History Modal */}
-      {showHistory && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="bg-gray-900/95 backdrop-blur-2xl border-cyan-500/30 shadow-2xl shadow-black/50 max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <CardHeader className="border-b border-cyan-500/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <History className="w-5 h-5 text-cyan-400" />
-                  <CardTitle className="text-xl font-bold text-white">Histori Login</CardTitle>
+      {/* Login History Dialog - Lebih Rapi dan Responsive */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="bg-gray-900/95 backdrop-blur-2xl border-cyan-500/30 shadow-2xl shadow-black/50 max-w-4xl max-h-[90vh] p-0">
+          <DialogHeader className="border-b border-cyan-500/20 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-lg flex items-center justify-center">
+                  <History className="w-5 h-5 text-white" />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowHistory(false)}
-                  className="text-gray-400 hover:text-white hover:bg-white/10"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+                <div>
+                  <DialogTitle className="text-xl font-bold text-white">Histori Login</DialogTitle>
+                  <DialogDescription className="text-cyan-300">
+                    Riwayat login dan aktivitas akun Anda
+                  </DialogDescription>
+                </div>
               </div>
-              <CardDescription className="text-cyan-300">
-                Riwayat login dan aktivitas akun Anda
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="p-6 overflow-y-auto max-h-[60vh]">
-              {loadingHistory ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-500"></div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHistory(false)}
+                className="text-gray-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1 p-6 max-h-[60vh]">
+            {loadingHistory ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
+                  <p className="text-gray-400">Memuat histori login...</p>
                 </div>
-              ) : loginHistory.length === 0 ? (
-                <div className="text-center py-8">
-                  <History className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-300 mb-2">Belum Ada Histori</h3>
-                  <p className="text-gray-500">
-                    Belum ada aktivitas login yang tercatat
-                  </p>
+              </div>
+            ) : loginHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <History className="w-8 h-8 text-gray-500" />
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {loginHistory.map((history) => (
-                    <div
-                      key={history.id}
-                      className="bg-gray-800/50 border border-cyan-500/20 rounded-lg p-4 hover:bg-gray-800/70 transition-all duration-200"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
+                <h3 className="text-lg font-medium text-gray-300 mb-2">Belum Ada Histori</h3>
+                <p className="text-gray-500">
+                  Belum ada aktivitas login yang tercatat
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {loginHistory.map((history) => (
+                  <div
+                    key={history.id}
+                    className="bg-gray-800/50 border border-cyan-500/20 rounded-lg p-4 hover:bg-gray-800/70 transition-all duration-200"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
                           <Calendar className="w-4 h-4 text-cyan-400" />
+                        </div>
+                        <div>
                           <span className="text-sm font-medium text-white">
                             {formatDate(history.loginTime)}
                           </span>
+                          {history.isActive && (
+                            <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/30">
+                              Sesi Aktif
+                            </Badge>
+                          )}
                         </div>
-                        {history.isActive && (
-                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                            Sesi Aktif
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-300">IP:</span>
-                          <span className="text-cyan-300 font-mono">{history.ip}</span>
-                        </div>
-                        
-                        {history.location && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-300">Lokasi:</span>
-                            <span className="text-cyan-300">{history.location}</span>
-                          </div>
-                        )}
-                        
-                        {history.device && (
-                          <div className="flex items-center gap-2">
-                            <Monitor className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-300">Perangkat:</span>
-                            <span className="text-cyan-300">
-                              {getDeviceIcon(history.device)} {history.device}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {history.browser && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-300">Browser:</span>
-                            <span className="text-cyan-300">
-                              {getBrowserIcon(history.browser)} {history.browser}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-              
-              <div className="mt-6 p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <Shield className="w-4 h-4 text-cyan-400 mt-0.5" />
-                  <div className="text-sm text-cyan-300">
-                    <p className="font-medium mb-1">Keamanan Akun</p>
-                    <p className="text-xs">
-                      Histori login membantu Anda memantau aktivitas akun. Jika Anda melihat aktivitas yang mencurigakan, 
-                      segera ubah password dan hubungi support.
-                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="flex items-center gap-2 p-2 bg-gray-900/50 rounded">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-gray-400">IP Address</p>
+                          <p className="text-sm text-cyan-300 font-mono truncate">{history.ip}</p>
+                        </div>
+                      </div>
+                      
+                      {history.location && (
+                        <div className="flex items-center gap-2 p-2 bg-gray-900/50 rounded">
+                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-gray-400">Lokasi</p>
+                            <p className="text-sm text-cyan-300 truncate">{history.location}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {history.device && (
+                        <div className="flex items-center gap-2 p-2 bg-gray-900/50 rounded">
+                          {getDeviceIcon(history.device)}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-gray-400">Perangkat</p>
+                            <p className="text-sm text-cyan-300 truncate">{history.device}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {history.browser && (
+                        <div className="flex items-center gap-2 p-2 bg-gray-900/50 rounded">
+                          <span className="text-sm">{getBrowserIcon(history.browser)}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-gray-400">Browser</p>
+                            <p className="text-sm text-cyan-300 truncate">{history.browser}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="mt-6 p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="text-sm text-cyan-300">
+                  <p className="font-medium mb-1">Keamanan Akun</p>
+                  <p className="text-xs text-gray-400">
+                    Histori login membantu Anda memantau aktivitas akun. Jika Anda melihat aktivitas yang mencurigakan, 
+                    segera ubah password dan hubungi support.
+                  </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

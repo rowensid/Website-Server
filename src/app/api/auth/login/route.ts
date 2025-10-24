@@ -5,6 +5,56 @@ import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
+// Fungsi untuk mendeteksi device dari user agent
+function detectDevice(userAgent: string): string {
+  const ua = userAgent.toLowerCase()
+  
+  if (/mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
+    if (/tablet|ipad|playbook|silk/i.test(ua)) {
+      return 'Tablet'
+    }
+    return 'Mobile'
+  }
+  
+  return 'Desktop'
+}
+
+// Fungsi untuk mendeteksi browser dari user agent
+function detectBrowser(userAgent: string): string {
+  const ua = userAgent.toLowerCase()
+  
+  if (ua.includes('chrome') && !ua.includes('edg')) return 'Chrome'
+  if (ua.includes('firefox')) return 'Firefox'
+  if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari'
+  if (ua.includes('edg')) return 'Edge'
+  if (ua.includes('opera') || ua.includes('opr')) return 'Opera'
+  
+  return 'Unknown'
+}
+
+// Fungsi untuk mendapatkan lokasi dari IP (simplified version)
+async function getLocationFromIP(ip: string): Promise<string> {
+  try {
+    // Untuk development, kita return default location
+    if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168') || ip.startsWith('10.')) {
+      return 'Local Network'
+    }
+    
+    // Untuk production, bisa menggunakan external API seperti ip-api.com
+    const response = await fetch(`http://ip-api.com/json/${ip}`)
+    if (response.ok) {
+      const data = await response.json()
+      if (data.status === 'success') {
+        return `${data.city}, ${data.country}`
+      }
+    }
+  } catch (error) {
+    console.error('Error getting location:', error)
+  }
+  
+  return 'Unknown'
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
@@ -54,6 +104,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get client information
+    const userAgent = request.headers.get('user-agent') || 'Unknown'
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || '127.0.0.1'
+    
+    const device = detectDevice(userAgent)
+    const browser = detectBrowser(userAgent)
+    const location = await getLocationFromIP(ip)
+
     // Update last login
     await db.user.update({
       where: { id: user.id },
@@ -82,6 +141,41 @@ export async function POST(request: NextRequest) {
         expiresAt
       }
     })
+
+    // Save login history to database
+    try {
+      await db.loginHistory.create({
+        data: {
+          userId: user.id,
+          ip,
+          userAgent,
+          location,
+          device,
+          browser,
+          isActive: true
+        }
+      })
+
+      // Set previous active sessions to inactive
+      await db.loginHistory.updateMany({
+        where: {
+          userId: user.id,
+          isActive: true,
+          id: {
+            not: (await db.loginHistory.findFirst({
+              where: { userId: user.id },
+              orderBy: { loginTime: 'desc' }
+            }))?.id
+          }
+        },
+        data: {
+          isActive: false
+        }
+      })
+    } catch (historyError) {
+      console.error('Error saving login history:', historyError)
+      // Continue with login even if history saving fails
+    }
 
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user

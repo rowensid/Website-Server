@@ -25,40 +25,39 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get login history for this user
-    const loginHistory = await db.session.findMany({
+    // Get login history from database
+    const loginHistory = await db.loginHistory.findMany({
       where: { userId: session.userId },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
+      orderBy: { loginTime: 'desc' },
+      take: 20, // Get last 20 login records
       select: {
         id: true,
-        createdAt: true,
-        token: false, // Don't expose token
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
+        loginTime: true,
+        ip: true,
+        userAgent: true,
+        location: true,
+        device: true,
+        browser: true,
+        isActive: true,
+        createdAt: true
       }
     })
 
-    // Mock IP and location data (in real app, you'd store this in the session)
-    const mockHistory = loginHistory.map((session, index) => ({
-      id: session.id,
-      loginTime: session.createdAt.toISOString(),
-      ip: `192.168.1.${100 + index}`,
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      location: ['Jakarta, Indonesia', 'Surabaya, Indonesia', 'Bandung, Indonesia'][index % 3],
-      device: ['Desktop', 'Mobile', 'Tablet'][index % 3],
-      browser: ['Chrome', 'Firefox', 'Safari'][index % 3],
-      isActive: session.expiresAt > new Date()
+    // Format the response
+    const formattedHistory = loginHistory.map((history) => ({
+      id: history.id,
+      loginTime: history.loginTime.toISOString(),
+      ip: history.ip,
+      userAgent: history.userAgent,
+      location: history.location,
+      device: history.device,
+      browser: history.browser,
+      isActive: history.isActive
     }))
 
     return NextResponse.json({
-      history: mockHistory,
-      total: mockHistory.length
+      history: formattedHistory,
+      total: formattedHistory.length
     })
 
   } catch (error) {
